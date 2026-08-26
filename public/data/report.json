@@ -11,6 +11,28 @@
     "cross_key_reviewed": 0,
     "accepted": 0
   },
+  "review_evidence": {
+    "basis": "latest-valid-review-per-reviewer-key-and-result",
+    "valid_review_events": 0,
+    "effective_reviewer_result_pairs": 0,
+    "superseded_review_events": 0,
+    "conflicting_reviewer_result_pairs": 0,
+    "effective_cross_key_pairs": 0,
+    "effective_cross_key_pass_pairs": 0,
+    "cross_key_pass_pairs_targeting_reproducible_results": 0,
+    "result_targets_with_cross_key_review": 0,
+    "reproducible_result_targets_with_cross_key_pass_review": 0,
+    "result_targets_with_multiple_cross_key_reviewers": 0,
+    "unique_cross_key_reviewer_keys": 0,
+    "effective_cross_key_verdicts": {
+      "pass": 0,
+      "changes": 0,
+      "reject": 0
+    },
+    "top_cross_key_reviewer_share_ppm": 0,
+    "cross_key_reviewer_hhi_ppm": 0,
+    "independence": "unknown"
+  },
   "events": [
     {
       "event_id": "1db7d15e99fc3f4def53970fb479f0f9d7dfe5242de3ce1750e5d4bada055577",
@@ -264,14 +286,14 @@
   "semantically_ignored": [],
   "limitations": [
     "A DID proves control of a key, not a human, model, or independent operator.",
-    "Cross-key review does not prove independent control.",
+    "Review-key concentration and cross-key counts do not prove independent control or review quality.",
     "Only archive-contained, time-ordered TASK ancestry can raise a RESULT above ATTRIBUTABLE.",
     "A successful replay proves pinned bytes passed a fixed check, not authorship or novelty.",
     "The audit core does not ingest the official-room start checkpoint; launch ordering is verified separately by the guarded launcher and official-room readback.",
     "Network measurements are bounded samples, not population estimates.",
     "Arbitrary Technocore message text is processed transiently and not archived.",
     "Hashes of short public text can be vulnerable to guessing.",
-    "Duplicate RESULT artifact tuples are attributable but only the earliest eligible event, across every task, can be replayed or counted as reproducible.",
+    "Duplicate RESULT bytes in the same repository are attributable but only the earliest eligible event, across every path, commit, and task, can be replayed or counted as reproducible.",
     "Artifact checks reserve eight coordinator slots, then select participants fairly by DID and task with per-DID and per-task caps; free DIDs still make complete Sybil resistance impossible.",
     "The event archive reserves coordinator control capacity and follows recent activity with bounded round-robin key/task selection; dependencies outside the retained archive cannot earn DAG evidence.",
     "Published network aggregates cannot be independently recomputed because per-message sketches are discarded by the public workflow.",
@@ -281,14 +303,24 @@
     "Technocore source timestamps and sequence numbers are server-reported transport metadata and are not covered by the inner SP1 signature.",
     "Fixed replay checks run from an exact trusted-main archive in a secretless bounded process; operating-system network isolation is not asserted."
   ],
-  "audit_core_sha256": "4301a2ca67751c319d206a16d1e863c27d6b5f2181627ddfd37be96c9cf858f5",
-  "generated_at": "2026-08-26T10:08:32.002Z",
+  "audit_core_sha256": "30f21feec524b22727c9b2bd4c1eb981bc1eed8950cfc783ea3aa0cbed00aeb3",
+  "generated_at": "2026-08-26T11:17:41.570Z",
   "event_state": "active",
   "unsigned_proposals_observed": 0,
   "build_room": {
     "room": "swarmproof-48-e463",
     "messages_observed_in_tail": 13,
-    "collection_error": null
+    "collection_error": null,
+    "response_count": 13,
+    "first_seq": 1,
+    "last_seq": 13,
+    "sequence_metadata_valid": true,
+    "message_entries_truncated": 0,
+    "message_entries_uninspected": 0,
+    "message_entries_rejected": 0,
+    "message_entries_deduplicated": 0,
+    "continuity_complete": true,
+    "continuity_reason": "complete-from-room-origin"
   },
   "artifact_verification": {
     "candidates": 3,
@@ -314,14 +346,14 @@
   },
   "snapshot_manifest": {
     "schema": "swarmproof-snapshot-manifest-v1",
-    "generated_at": "2026-08-26T10:08:32.002Z",
-    "source_commit": "66379d359c4ad9361473a594ef4a9dd6d2647103",
-    "audit_core_sha256": "4301a2ca67751c319d206a16d1e863c27d6b5f2181627ddfd37be96c9cf858f5",
+    "generated_at": "2026-08-26T11:17:41.570Z",
+    "source_commit": "d2299caf0acd0151df4ef00739531173944a0bcd",
+    "audit_core_sha256": "30f21feec524b22727c9b2bd4c1eb981bc1eed8950cfc783ea3aa0cbed00aeb3",
     "network_sample_sha256": "8e9fb05b7f266bd22169ca3d1bec49e19197b346bd70009694aa7db9f07799aa",
     "events_archive_sha256": "68fc0d0385e4382be1c68e04d88e116e9a9fbe4bc60e74f0c944d60dcbe8e56a",
     "proposals_archive_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   },
-  "snapshot_manifest_sha256": "46341f060bf181c893c3dc97363e01bc924b0b51d09fbdf833a9ab5f94e5619d",
+  "snapshot_manifest_sha256": "a1cee36e101e3bcf0876315422447e0f8ae1394546a6bdb4e85811b4629db536",
   "network_sample": {
     "schema": "swarmproof-network-sample-v2",
     "generated_at": "2026-08-26T09:58:41.809Z",
