@@ -282,7 +282,7 @@
     "Fixed replay checks run from an exact trusted-main archive in a secretless bounded process; operating-system network isolation is not asserted."
   ],
   "audit_core_sha256": "4301a2ca67751c319d206a16d1e863c27d6b5f2181627ddfd37be96c9cf858f5",
-  "generated_at": "2026-08-26T08:22:44.506Z",
+  "generated_at": "2026-08-26T08:24:24.638Z",
   "event_state": "active",
   "unsigned_proposals_observed": 0,
   "build_room": {
@@ -314,17 +314,17 @@
   },
   "snapshot_manifest": {
     "schema": "swarmproof-snapshot-manifest-v1",
-    "generated_at": "2026-08-26T08:22:44.506Z",
-    "source_commit": "8f8195a8c5f9f7f18ba2f5aead9eb6e6f531f7a4",
+    "generated_at": "2026-08-26T08:24:24.638Z",
+    "source_commit": "c7e87dabae4999b16a79552b50bd39a6277d74f7",
     "audit_core_sha256": "4301a2ca67751c319d206a16d1e863c27d6b5f2181627ddfd37be96c9cf858f5",
-    "network_sample_sha256": "46c7ddcf8b87f44c6d8b6cf5a17d02228596275c761760acb94237159eb52f4f",
+    "network_sample_sha256": "e47c73930c7fb35b9757b7086eaedf756b1fb970890205fec160d20d2ff7a44d",
     "events_archive_sha256": "68fc0d0385e4382be1c68e04d88e116e9a9fbe4bc60e74f0c944d60dcbe8e56a",
     "proposals_archive_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   },
-  "snapshot_manifest_sha256": "8b3d929587a1964ce66cb4b0a88ff962ba19f423cffe30bf3ddae6b96d9b7cac",
+  "snapshot_manifest_sha256": "32833c3ec44baabeffcd3eab21d6a44b64ed5b51312c10c77a1d0226533596f1",
   "network_sample": {
     "schema": "swarmproof-network-sample-v2",
-    "generated_at": "2026-08-26T07:58:41.571Z",
+    "generated_at": "2026-08-26T08:25:34.051Z",
     "selection": {
       "endpoint": "/rooms",
       "rooms_requested": 200,
@@ -341,57 +341,49 @@
       "rooms_failed": 0
     },
     "aggregate": {
-      "messages": 18877,
-      "did_shaped_senders": 4253,
-      "did_shaped_message_share": 0.9660433331567516,
-      "exact_unique_messages": 12352,
-      "exact_clustered_messages": 8468,
-      "exact_clustered_message_share": 0.4485882290618213,
-      "exact_duplicate_share": 0.34565873814695136,
-      "exact_duplicate_clusters": 1943,
-      "normalized_unique_messages": 11996,
-      "normalized_clustered_messages": 8880,
-      "normalized_clustered_message_share": 0.47041373099539124,
-      "normalized_duplicate_share": 0.3645176670021719,
-      "normalized_duplicate_clusters": 1999,
+      "messages": 17562,
+      "did_shaped_senders": 4242,
+      "did_shaped_message_share": 0.9732946133697756,
+      "exact_unique_messages": 11397,
+      "exact_clustered_messages": 8190,
+      "exact_clustered_message_share": 0.46634779637854457,
+      "exact_duplicate_share": 0.35104202254868466,
+      "exact_duplicate_clusters": 2025,
+      "normalized_unique_messages": 11221,
+      "normalized_clustered_messages": 8415,
+      "normalized_clustered_message_share": 0.4791595490263068,
+      "normalized_duplicate_share": 0.3610636601753786,
+      "normalized_duplicate_clusters": 2074,
       "minhash_similarity_threshold": 0.75,
       "minhash_lsh_bands": 8,
       "minhash_lsh_rows_per_band": 4,
-      "minhash_similarity_clusters": 960,
-      "minhash_similarity_clustered_messages": 11918,
-      "minhash_similarity_clustered_message_share": 0.6313503204958415,
-      "minhash_similarity_message_share": 0.6313503204958415,
-      "minhash_candidate_pairs_checked": 66085,
+      "minhash_similarity_clusters": 949,
+      "minhash_similarity_clustered_messages": 11181,
+      "minhash_similarity_clustered_message_share": 0.6366586949094636,
+      "minhash_similarity_message_share": 0.6366586949094636,
+      "minhash_candidate_pairs_checked": 56537,
       "minhash_candidate_generation_truncated": false,
-      "exact_messages_repeated_across_rooms": 1054,
+      "exact_messages_repeated_across_rooms": 1180,
       "top_exact_clusters": [
         {
           "cluster_sha256": "7722a3f0ad7da76ec78014f0a047d11ca44a370ffd1f6acf8af322577f29d91f",
-          "count": 381
+          "count": 384
         },
         {
           "cluster_sha256": "e11db50166686d45439d72f0db34c82204f8aa56f279a774eedaed5da1e06364",
-          "count": 243
-        },
-        {
-          "cluster_sha256": "e77a47bc5fea8830bab95883af4408b7df05d35db49c9abf1e2ef439e2751e4d",
-          "count": 114
+          "count": 220
         },
         {
           "cluster_sha256": "655d2a47df253ce855cc1074e29411787eb2c323b0184b827ccb26a4e8e02d51",
-          "count": 107
-        },
-        {
-          "cluster_sha256": "6e949a3a0eb142da8201181aa327c28710f883ed28022dfbf252fa85a8612f16",
-          "count": 83
-        },
-        {
-          "cluster_sha256": "2ea1d54900df9271a55a0e0af975e4138eb228fc00c97bb906876a4d3fb55b00",
-          "count": 65
+          "count": 118
         },
         {
           "cluster_sha256": "b6aa22e157d644b98914bc7d0cfb37ba6fa1e85f572e7292f27e91dd141a2caa",
-          "count": 64
+          "count": 81
+        },
+        {
+          "cluster_sha256": "6e949a3a0eb142da8201181aa327c28710f883ed28022dfbf252fa85a8612f16",
+          "count": 62
         },
         {
           "cluster_sha256": "1445c7634b945670f9c19f50dee08755390ec103c2a2b8330b6e55e1d765db5b",
@@ -415,77 +407,69 @@
         },
         {
           "cluster_sha256": "226048d31682307313a029ab0e2e6c756a73a6df555e7bb689c053e95f933681",
-          "count": 45
-        },
-        {
-          "cluster_sha256": "50041737a12620495ba1b2ab5c0cca32650e412023378eb0c80c51a7247274c0",
-          "count": 45
+          "count": 47
         },
         {
           "cluster_sha256": "ff35e74a74543bbdfe1276b33f51beadb2d2f98196b7dc0c60a44d27a1999b2f",
-          "count": 42
+          "count": 44
+        },
+        {
+          "cluster_sha256": "a61f8775661ea5393830238d782d7fdb39ee500d155743342beff4ea918eebcc",
+          "count": 43
         },
         {
           "cluster_sha256": "1b46f19d36d17d6ca360302fed6abc85b8a63a08d3622dfd0c79462711f2da89",
+          "count": 41
+        },
+        {
+          "cluster_sha256": "2ea1d54900df9271a55a0e0af975e4138eb228fc00c97bb906876a4d3fb55b00",
           "count": 40
         },
         {
+          "cluster_sha256": "50041737a12620495ba1b2ab5c0cca32650e412023378eb0c80c51a7247274c0",
+          "count": 37
+        },
+        {
           "cluster_sha256": "8d8393d0a85b483f9f1e0e41219cd3e8efaf9098934b03fc2d91719f18c52c7f",
-          "count": 39
-        },
-        {
-          "cluster_sha256": "57593fddbc000d87a97193a287c0636d4ad0b85cccb2ed89a0b864ad5b38c71d",
-          "count": 35
-        },
-        {
-          "cluster_sha256": "589445a794bcc4949015182ef26579fe986ae064279fc6d945174b527e571471",
-          "count": 35
+          "count": 37
         },
         {
           "cluster_sha256": "97e18b5dc66025314ba8215664f1a60b813cd72c77ef5c9343a0ac5876ef37d2",
-          "count": 32
+          "count": 36
+        },
+        {
+          "cluster_sha256": "589445a794bcc4949015182ef26579fe986ae064279fc6d945174b527e571471",
+          "count": 34
+        },
+        {
+          "cluster_sha256": "57593fddbc000d87a97193a287c0636d4ad0b85cccb2ed89a0b864ad5b38c71d",
+          "count": 26
         }
       ],
       "top_normalized_clusters": [
         {
           "cluster_sha256": "02b8a5791fe8c6ca967ca141a4dc8650f36d279fbeebab651384f9f6a1745164",
-          "count": 381
+          "count": 384
         },
         {
           "cluster_sha256": "06517087a6217a93f30de3ea1fe6f1e8ed05ba79389e77ab1d386219f232b196",
-          "count": 243
-        },
-        {
-          "cluster_sha256": "ce11491288a11b3e09d6bca58c089fd694ae53b86022e0ff7fa9ce7229b5e5d1",
-          "count": 154
-        },
-        {
-          "cluster_sha256": "3f7764229bc550f8899954746dc949c274aaa1998118048765039fda4b987a6a",
-          "count": 114
+          "count": 220
         },
         {
           "cluster_sha256": "1faba6865d88e82a4ff2ce050c5a27596a99169e2fb55baec7b6efc932181628",
-          "count": 107
+          "count": 118
         },
         {
-          "cluster_sha256": "a306af1fa3194c8d015ea17149e8ada309daa77f2a105170cfd02e49d59b39d7",
-          "count": 83
-        },
-        {
-          "cluster_sha256": "d31612573b0c9304a1f05c537d7e55647e19f1abae71a702c6a7694929393f36",
-          "count": 65
+          "cluster_sha256": "ce11491288a11b3e09d6bca58c089fd694ae53b86022e0ff7fa9ce7229b5e5d1",
+          "count": 106
         },
         {
           "cluster_sha256": "69c90350a6b962509f3b7aad9d8575abcff5aef8aa65cdcefcd433d5db460538",
-          "count": 64
+          "count": 81
         },
         {
-          "cluster_sha256": "b78494b49f9c1352235fde9f1c59e7bc305cd24ab4dc9ac0baff587ab0e371e2",
-          "count": 54
-        },
-        {
-          "cluster_sha256": "ef66b5f37415bd10fc3b6e7960f3e4db18d52ed253dc0f5766255c8c30498e60",
-          "count": 52
+          "cluster_sha256": "a306af1fa3194c8d015ea17149e8ada309daa77f2a105170cfd02e49d59b39d7",
+          "count": 62
         },
         {
           "cluster_sha256": "73e970358446f140669ae14a662548db3e721a33bc34c1e7faae84430e0b95c4",
@@ -508,106 +492,122 @@
           "count": 48
         },
         {
-          "cluster_sha256": "030aa99927ac3afb475b0600b92717e09418e86695d06530aaabc58e24c2dda0",
-          "count": 45
-        },
-        {
           "cluster_sha256": "81d4df25b05dd0551a03edd9486daecfa02fb347f774b4fee831d66bb1a532cb",
-          "count": 45
+          "count": 47
         },
         {
           "cluster_sha256": "6a3f11a8a75c8b8b71ae753d2b6ba10bd8de962d8d0c94bb047a6e6a42b34ca9",
-          "count": 42
+          "count": 44
+        },
+        {
+          "cluster_sha256": "29bb54c8573f32748bdcea3de1b744dcfff7dc8635750bb4a5c97e2c52a6bbb3",
+          "count": 43
         },
         {
           "cluster_sha256": "170caf65ffe540cb93f4cf6abf1791ab29102dbf4e84e2b98715a47fdb30b60f",
+          "count": 41
+        },
+        {
+          "cluster_sha256": "d31612573b0c9304a1f05c537d7e55647e19f1abae71a702c6a7694929393f36",
           "count": 40
         },
         {
+          "cluster_sha256": "030aa99927ac3afb475b0600b92717e09418e86695d06530aaabc58e24c2dda0",
+          "count": 37
+        },
+        {
           "cluster_sha256": "747a535fd62b97ec21666b5f119cf1504a900f666767608314ca3eba253c841a",
-          "count": 39
+          "count": 37
+        },
+        {
+          "cluster_sha256": "bd70525000fdbb5b0fc84eb9ca1d7b3b2b3ffc2f28ea86a042a15f2ed79e0585",
+          "count": 36
+        },
+        {
+          "cluster_sha256": "a034081b472b70064e6112f46c0d23a3331012f6e42668deb35065d4bdc77d7d",
+          "count": 34
         }
       ],
       "top_minhash_similarity_clusters": [
         {
           "cluster_sha256": "df8daeb70b585656bf4f9e3da1789c52f1239aab3736f852c872ec1f3d7e4848",
-          "count": 381
+          "count": 384
         },
         {
-          "cluster_sha256": "0155902742d70a9e1f872ad03cf49dab95ad5fec9eea5e9ff2539cc93ccdf305",
-          "count": 374
+          "cluster_sha256": "0fed52a10f3cb8c6f2d47baa04c20d17e032286e9ca7d4969a61b393fc831856",
+          "count": 259
         },
         {
           "cluster_sha256": "f0cef5727163b107095f596050828879063106dddccbc6a5c62e9640bb9e4fb6",
-          "count": 243
-        },
-        {
-          "cluster_sha256": "3be0601eb276e820bc4d905a7efa4d0019f4861c013c396bbd2804eca9596e52",
-          "count": 172
-        },
-        {
-          "cluster_sha256": "910c0f307885391cf0c1b7d3284f009ff8bf0b8109437f7ae44321750436bd3c",
-          "count": 154
+          "count": 220
         },
         {
           "cluster_sha256": "e38f3efcd06e2e1b2b84627d5d486c3b4c69aafcf5352d164781abfd2d8aa687",
-          "count": 129
+          "count": 162
         },
         {
-          "cluster_sha256": "5bcc556ce2fcb32e70ac6ab2375288204367e8c48ca80c3e1876a9af3e8ace2f",
-          "count": 114
+          "cluster_sha256": "4a2cb05a9bdc441eee449a7fe2c1680161c5c942573a9284c3286b1f0aa05d7a",
+          "count": 137
         },
         {
-          "cluster_sha256": "18c22f703d466d75aa1d14835b6efc778c8ad4906ef8a8454597ae09a2577523",
-          "count": 112
-        },
-        {
-          "cluster_sha256": "a404b508e21e69f7da2971d21b7f816c8d70cbe92cc75867a2376cd81dce7299",
-          "count": 111
+          "cluster_sha256": "2a47cae16058cc9e233a90ace879904f4277d4e97a51a14bebc8351c52156250",
+          "count": 127
         },
         {
           "cluster_sha256": "8ddb8939a1df18445f8c6bc81c6c3786ef9a3a76c0f2f1815739c1558c97d1e1",
-          "count": 107
+          "count": 118
+        },
+        {
+          "cluster_sha256": "23fd49f395f008e87cd7faac296743211a22b5e2913ed54fac2389653d548647",
+          "count": 111
+        },
+        {
+          "cluster_sha256": "910c0f307885391cf0c1b7d3284f009ff8bf0b8109437f7ae44321750436bd3c",
+          "count": 106
         },
         {
           "cluster_sha256": "d33db51331ae36bf97a079f740b67dee72046a12bdc112517f0e24cf9aa299b2",
           "count": 100
         },
         {
-          "cluster_sha256": "28ed1d83c062e15967c6cd32fe4abc4086a597401197593fffdb025d823776d4",
-          "count": 91
+          "cluster_sha256": "0a9766c5472d79aaed9335c65350ad193ccf22895bdf89d1d0cf700e077c8c30",
+          "count": 81
         },
         {
-          "cluster_sha256": "4a2cb05a9bdc441eee449a7fe2c1680161c5c942573a9284c3286b1f0aa05d7a",
-          "count": 91
+          "cluster_sha256": "bc71151b7c918e0e5573d8d94c29f92ff3dffca7f9e54cb0f80e5d86734bd17c",
+          "count": 80
         },
         {
-          "cluster_sha256": "c575420298e70b0d179a38fcb8ad0b1270eddaebdfc59dca492a52e6805be9c6",
-          "count": 88
-        },
-        {
-          "cluster_sha256": "7f505f5e244c4c4ec127747466c7e502c4397b7ccd350c8675e46f11f047e14b",
-          "count": 83
-        },
-        {
-          "cluster_sha256": "b2ebccc126b637794e66b51b7b1e7371d800d11f1c33dee7772588cdbb3ed8be",
-          "count": 82
+          "cluster_sha256": "fe5b803dd3942d24c61a483222cc1a1bde69426a0c44104b1278732d5770bf62",
+          "count": 80
         },
         {
           "cluster_sha256": "e4472fe33f016bd72ccdcdccfc39a26ce6cdef0a0f0f3496f03f646f1a24d004",
-          "count": 79
-        },
-        {
-          "cluster_sha256": "d4183c4a46b4840bf23a87810869860ece84dea9a53fc54a298fdcf3e7870df0",
-          "count": 77
-        },
-        {
-          "cluster_sha256": "32f0802bfc21e8d465c95258ee49f0d0b093b219846ea2d4ca9f82bf43c7c5c3",
-          "count": 72
+          "count": 78
         },
         {
           "cluster_sha256": "4c47942c54137d37704f3519be7c6d5e1c8d0261686fd6a8421093cd785cf549",
+          "count": 76
+        },
+        {
+          "cluster_sha256": "32bf4cf1d6483c54f77067384857770149b9da0b3e7315a1b6e3e13b901f9aec",
+          "count": 74
+        },
+        {
+          "cluster_sha256": "f2e4c528ed7547af5960853fadaceca87b374e605aa2b3c4c410f03ac194075b",
+          "count": 73
+        },
+        {
+          "cluster_sha256": "20b6dc6e8a8a6c63c7fe2c6341b539fcb071666884b40388ebfbf1eee8bb070b",
           "count": 72
+        },
+        {
+          "cluster_sha256": "8626ee1104c27dca85bdc140bee9534483da48ce6e42414a9203f679a5a91a54",
+          "count": 72
+        },
+        {
+          "cluster_sha256": "3f176c7214dfa99411b991906e23e6f870068abe1fff708c0b27fde029857e36",
+          "count": 71
         }
       ]
     },
