@@ -1,0 +1,355 @@
+{
+  "schema": "swarmproof-conformance-vectors-v1",
+  "generated_by": "scripts/generate-conformance-vectors.mjs",
+  "fixture_key": {
+    "classification": "PUBLIC TEST KEY; NEVER USE FOR REAL IDENTITY, VALUE, OR ACCESS",
+    "algorithm": "Ed25519",
+    "seed_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+    "pkcs8_der_hex": "302e020100300506032b657004220420000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+    "raw_public_key_hex": "03a107bff3ce10be1d70dd18e74bc09967e4d6309ba50d5f1ddc8664125531b8",
+    "multicodec_prefix_hex": "ed01",
+    "multicodec_public_key_hex": "ed0103a107bff3ce10be1d70dd18e74bc09967e4d6309ba50d5f1ddc8664125531b8",
+    "did": "did:key:z6MkehRgf7yJbgaGfYsdoAsKdBPE3dj2CYhowQdcjqSJgvVd"
+  },
+  "canonical_json": {
+    "algorithm_profile": "recursively sorted object keys; array order preserved; compact JSON; UTF-8",
+    "cases": [
+      {
+        "id": "event-claim-payload",
+        "input": {
+          "schema": "swarmproof-event-v1",
+          "type": "CLAIM",
+          "task_id": "conformance",
+          "claimed_at": "2026-01-01T00:00:00.000Z",
+          "nonce": "9007199254740993",
+          "parent_event_ids": [
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ],
+          "content_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "experiment": "swarmproof-48-e463",
+          "did": "did:key:z6MkehRgf7yJbgaGfYsdoAsKdBPE3dj2CYhowQdcjqSJgvVd"
+        },
+        "expected": {
+          "utf8": "{\"claimed_at\":\"2026-01-01T00:00:00.000Z\",\"content_sha256\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"did\":\"did:key:z6MkehRgf7yJbgaGfYsdoAsKdBPE3dj2CYhowQdcjqSJgvVd\",\"experiment\":\"swarmproof-48-e463\",\"nonce\":\"9007199254740993\",\"parent_event_ids\":[\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"],\"schema\":\"swarmproof-event-v1\",\"task_id\":\"conformance\",\"type\":\"CLAIM\"}",
+          "utf8_hex": "7b22636c61696d65645f6174223a22323032362d30312d30315430303a30303a30302e3030305a222c22636f6e74656e745f736861323536223a2262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262222c22646964223a226469643a6b65793a7a364d6b656852676637794a62676147665973646f41734b6442504533646a324359686f775164636a71534a67765664222c226578706572696d656e74223a22737761726d70726f6f662d34382d65343633222c226e6f6e6365223a2239303037313939323534373430393933222c22706172656e745f6576656e745f696473223a5b2261616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161225d2c22736368656d61223a22737761726d70726f6f662d6576656e742d7631222c227461736b5f6964223a22636f6e666f726d616e6365222c2274797065223a22434c41494d227d",
+          "sha256": "5cac8eda6656839d055ca89504c6d8aa76098d4d84fa897ba05c0a3fa71a8f14"
+        }
+      },
+      {
+        "id": "contribution-index-sequence-1-payload",
+        "input": {
+          "schema": "swarmproof-contribution-index-v1",
+          "project": "swarmproof-48-e463",
+          "purpose": "controller-curated-contribution-evidence-index",
+          "controller": "did:key:z6MkehRgf7yJbgaGfYsdoAsKdBPE3dj2CYhowQdcjqSJgvVd",
+          "issued_at": "2026-01-01T01:00:00.000Z",
+          "sequence": "1",
+          "previous_index_sha256": null,
+          "control_claim_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "contributions": [
+            {
+              "contribution_id": "4366d314121bb2a39562266a302216a647ec3ef6d916be4b27404f2e2dc5904c",
+              "subject": {
+                "type": "git-content",
+                "repository": "vector-lab/swarmproof-48",
+                "content_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+              },
+              "evidence": [
+                {
+                  "kind": "swarmproof-result-snapshot",
+                  "result_event_id": "e3ede1220eb1df5db940185b51968597d855627f19f3e024609c1339c47e93e5",
+                  "publication_commit": "cccccccccccccccccccccccccccccccccccccccc",
+                  "report_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                  "snapshot_manifest_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                }
+              ]
+            }
+          ]
+        },
+        "expected": {
+          "utf8": "{\"contributions\":[{\"contribution_id\":\"4366d314121bb2a39562266a302216a647ec3ef6d916be4b27404f2e2dc5904c\",\"evidence\":[{\"kind\":\"swarmproof-result-snapshot\",\"publication_commit\":\"cccccccccccccccccccccccccccccccccccccccc\",\"report_sha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"result_event_id\":\"e3ede1220eb1df5db940185b51968597d855627f19f3e024609c1339c47e93e5\",\"snapshot_manifest_sha256\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"}],\"subject\":{\"content_sha256\":\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\",\"repository\":\"vector-lab/swarmproof-48\",\"type\":\"git-content\"}}],\"control_claim_sha256\":\"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\",\"controller\":\"did:key:z6MkehRgf7yJbgaGfYsdoAsKdBPE3dj2CYhowQdcjqSJgvVd\",\"issued_at\":\"2026-01-01T01:00:00.000Z\",\"previous_index_sha256\":null,\"project\":\"swarmproof-48-e463\",\"purpose\":\"controller-curated-contribution-evidence-index\",\"schema\":\"swarmproof-contribution-index-v1\",\"sequence\":\"1\"}",
+          "utf8_hex": "7b22636f6e747269627574696f6e73223a5b7b22636f6e747269627574696f6e5f6964223a2234333636643331343132316262326133393536323236366133303232313661363437656333656636643931366265346232373430346632653264633539303463222c2265766964656e6365223a5b7b226b696e64223a22737761726d70726f6f662d726573756c742d736e617073686f74222c227075626c69636174696f6e5f636f6d6d6974223a2263636363636363636363636363636363636363636363636363636363636363636363636363636363222c227265706f72745f736861323536223a2261616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161222c22726573756c745f6576656e745f6964223a2265336564653132323065623164663564623934303138356235313936383539376438353536323766313966336530323436303963313333396334376539336535222c22736e617073686f745f6d616e69666573745f736861323536223a2262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262227d5d2c227375626a656374223a7b22636f6e74656e745f736861323536223a2263636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363222c227265706f7369746f7279223a22766563746f722d6c61622f737761726d70726f6f662d3438222c2274797065223a226769742d636f6e74656e74227d7d5d2c22636f6e74726f6c5f636c61696d5f736861323536223a2264646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464222c22636f6e74726f6c6c6572223a226469643a6b65793a7a364d6b656852676637794a62676147665973646f41734b6442504533646a324359686f775164636a71534a67765664222c226973737565645f6174223a22323032362d30312d30315430313a30303a30302e3030305a222c2270726576696f75735f696e6465785f736861323536223a6e756c6c2c2270726f6a656374223a22737761726d70726f6f662d34382d65343633222c22707572706f7365223a22636f6e74726f6c6c65722d637572617465642d636f6e747269627574696f6e2d65766964656e63652d696e646578222c22736368656d61223a22737761726d70726f6f662d636f6e747269627574696f6e2d696e6465782d7631222c2273657175656e6365223a2231227d",
+          "sha256": "e3114be90d8ae193a562660ebd3b236019cf6cc33597665cd04c48cb2d0885d2"
+        }
+      }
+    ]
+  },
+  "event": {
+    "schema": "swarmproof-event-v1",
+    "experiment": "swarmproof-48-e463",
+    "envelope_prefix": "SP1",
+    "signing_input": "UTF8('swarmproof-event-v1|swarmproof-48-e463|' + BASE64URL(canonical_payload_utf8))",
+    "cases": [
+      {
+        "id": "valid-claim",
+        "envelope": "SP1.eyJjbGFpbWVkX2F0IjoiMjAyNi0wMS0wMVQwMDowMDowMC4wMDBaIiwiY29udGVudF9zaGEyNTYiOiJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIiwiZGlkIjoiZGlkOmtleTp6Nk1rZWhSZ2Y3eUpiZ2FHZllzZG9Bc0tkQlBFM2RqMkNZaG93UWRjanFTSmd2VmQiLCJleHBlcmltZW50Ijoic3dhcm1wcm9vZi00OC1lNDYzIiwibm9uY2UiOiI5MDA3MTk5MjU0NzQwOTkzIiwicGFyZW50X2V2ZW50X2lkcyI6WyJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIl0sInNjaGVtYSI6InN3YXJtcHJvb2YtZXZlbnQtdjEiLCJ0YXNrX2lkIjoiY29uZm9ybWFuY2UiLCJ0eXBlIjoiQ0xBSU0ifQ.iqm37KnOeR2_iZtJMi0O1Rkh8r8uzDTcytchGPf9yZjH3D277Vu7PiRyTnTcESlwYPjPvwvM7jYPiwlsjfiqBw",
+        "expected": {
+          "valid": true,
+          "code": "ok",
+          "event_id": "a78706ffcc15698c9a178a43671645ca360c985be2ee1a074b0a2f66039b8c9e",
+          "did": "did:key:z6MkehRgf7yJbgaGfYsdoAsKdBPE3dj2CYhowQdcjqSJgvVd",
+          "canonical_payload_sha256": "5cac8eda6656839d055ca89504c6d8aa76098d4d84fa897ba05c0a3fa71a8f14",
+          "signing_input_sha256": "703491fcff8d5c74af0e5d3cbedb5d4ed85de6e68454bfb4153f594ba80d40b5"
+        }
+      },
+      {
+        "id": "valid-result-with-allowlisted-repository",
+        "envelope": "SP1.eyJhcnRpZmFjdCI6eyJjb21taXQiOiJjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjIiwicGF0aCI6InZlY3RvcnMvcmVzdWx0Lmpzb24iLCJyZXBvc2l0b3J5IjoidmVjdG9yLWxhYi9zd2FybXByb29mLTQ4Iiwic2hhMjU2IjoiY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjYyJ9LCJjbGFpbWVkX2F0IjoiMjAyNi0wMS0wMVQwMDowMTowMC4wMDBaIiwiY29udGVudF9zaGEyNTYiOiJjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjIiwiZGlkIjoiZGlkOmtleTp6Nk1rZWhSZ2Y3eUpiZ2FHZllzZG9Bc0tkQlBFM2RqMkNZaG93UWRjanFTSmd2VmQiLCJleHBlcmltZW50Ijoic3dhcm1wcm9vZi00OC1lNDYzIiwibm9uY2UiOiI5MDA3MTk5MjU0NzQwOTk0IiwicGFyZW50X2V2ZW50X2lkcyI6WyJhNzg3MDZmZmNjMTU2OThjOWExNzhhNDM2NzE2NDVjYTM2MGM5ODViZTJlZTFhMDc0YjBhMmY2NjAzOWI4YzllIl0sInNjaGVtYSI6InN3YXJtcHJvb2YtZXZlbnQtdjEiLCJ0YXNrX2lkIjoiY29uZm9ybWFuY2UiLCJ0eXBlIjoiUkVTVUxUIn0.0jh3RKYw7elLHZwSZ1nwx3PotC6tPRQT7caJ5e9_ozMGPwygNEKmrVZSRpoZDgX0X0GHd1bCcSIra2f3TBYsBQ",
+        "verification_options": {
+          "allowed_repositories": [
+            "vector-lab/swarmproof-48"
+          ]
+        },
+        "expected": {
+          "valid": true,
+          "code": "ok",
+          "event_id": "e3ede1220eb1df5db940185b51968597d855627f19f3e024609c1339c47e93e5",
+          "did": "did:key:z6MkehRgf7yJbgaGfYsdoAsKdBPE3dj2CYhowQdcjqSJgvVd",
+          "canonical_payload_sha256": "35ce956ebcda1dac4dabc76c1864fdb9a551522d6771118798bb5e490fa08fa4",
+          "signing_input_sha256": "2dfd1aaf4d452509f0680dda9b2bd32fcb6b84ea1e70bae129b35ea12cec927b"
+        }
+      },
+      {
+        "id": "tampered-signature",
+        "envelope": "SP1.eyJjbGFpbWVkX2F0IjoiMjAyNi0wMS0wMVQwMDowMDowMC4wMDBaIiwiY29udGVudF9zaGEyNTYiOiJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIiwiZGlkIjoiZGlkOmtleTp6Nk1rZWhSZ2Y3eUpiZ2FHZllzZG9Bc0tkQlBFM2RqMkNZaG93UWRjanFTSmd2VmQiLCJleHBlcmltZW50Ijoic3dhcm1wcm9vZi00OC1lNDYzIiwibm9uY2UiOiI5MDA3MTk5MjU0NzQwOTkzIiwicGFyZW50X2V2ZW50X2lkcyI6WyJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIl0sInNjaGVtYSI6InN3YXJtcHJvb2YtZXZlbnQtdjEiLCJ0YXNrX2lkIjoiY29uZm9ybWFuY2UiLCJ0eXBlIjoiQ0xBSU0ifQ.i6m37KnOeR2_iZtJMi0O1Rkh8r8uzDTcytchGPf9yZjH3D277Vu7PiRyTnTcESlwYPjPvwvM7jYPiwlsjfiqBw",
+        "expected": {
+          "valid": false,
+          "code": "signature_invalid"
+        }
+      },
+      {
+        "id": "tampered-canonical-payload-with-original-signature",
+        "envelope": "SP1.eyJjbGFpbWVkX2F0IjoiMjAyNi0wMS0wMVQwMDowMDowMC4wMDBaIiwiY29udGVudF9zaGEyNTYiOiJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIiwiZGlkIjoiZGlkOmtleTp6Nk1rZWhSZ2Y3eUpiZ2FHZllzZG9Bc0tkQlBFM2RqMkNZaG93UWRjanFTSmd2VmQiLCJleHBlcmltZW50Ijoic3dhcm1wcm9vZi00OC1lNDYzIiwibm9uY2UiOiI5MDA3MTk5MjU0NzQwOTk1IiwicGFyZW50X2V2ZW50X2lkcyI6WyJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIl0sInNjaGVtYSI6InN3YXJtcHJvb2YtZXZlbnQtdjEiLCJ0YXNrX2lkIjoiY29uZm9ybWFuY2UiLCJ0eXBlIjoiQ0xBSU0ifQ.iqm37KnOeR2_iZtJMi0O1Rkh8r8uzDTcytchGPf9yZjH3D277Vu7PiRyTnTcESlwYPjPvwvM7jYPiwlsjfiqBw",
+        "expected": {
+          "valid": false,
+          "code": "signature_invalid"
+        }
+      },
+      {
+        "id": "valid-signature-over-noncanonical-json",
+        "envelope": "SP1.eyJzY2hlbWEiOiJzd2FybXByb29mLWV2ZW50LXYxIiwidHlwZSI6IkNMQUlNIiwidGFza19pZCI6ImNvbmZvcm1hbmNlIiwiY2xhaW1lZF9hdCI6IjIwMjYtMDEtMDFUMDA6MDA6MDAuMDAwWiIsIm5vbmNlIjoiOTAwNzE5OTI1NDc0MDk5MyIsInBhcmVudF9ldmVudF9pZHMiOlsiYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYSJdLCJjb250ZW50X3NoYTI1NiI6ImJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmIiLCJleHBlcmltZW50Ijoic3dhcm1wcm9vZi00OC1lNDYzIiwiZGlkIjoiZGlkOmtleTp6Nk1rZWhSZ2Y3eUpiZ2FHZllzZG9Bc0tkQlBFM2RqMkNZaG93UWRjanFTSmd2VmQifQ.hU4aQ4gxH1gcptDabZ6UjhjqxB4Qd9DzLRF7oMIl31LXbv_Row0-AQ0hZAN8tPiAOrLPqcj_mm8DfMxzAtdUDg",
+        "expected": {
+          "valid": false,
+          "code": "payload_json_not_canonical"
+        }
+      },
+      {
+        "id": "signature-over-wrong-domain",
+        "envelope": "SP1.eyJjbGFpbWVkX2F0IjoiMjAyNi0wMS0wMVQwMDowMDowMC4wMDBaIiwiY29udGVudF9zaGEyNTYiOiJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIiwiZGlkIjoiZGlkOmtleTp6Nk1rZWhSZ2Y3eUpiZ2FHZllzZG9Bc0tkQlBFM2RqMkNZaG93UWRjanFTSmd2VmQiLCJleHBlcmltZW50Ijoic3dhcm1wcm9vZi00OC1lNDYzIiwibm9uY2UiOiI5MDA3MTk5MjU0NzQwOTkzIiwicGFyZW50X2V2ZW50X2lkcyI6WyJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIl0sInNjaGVtYSI6InN3YXJtcHJvb2YtZXZlbnQtdjEiLCJ0YXNrX2lkIjoiY29uZm9ybWFuY2UiLCJ0eXBlIjoiQ0xBSU0ifQ.iNwPkRuss2eb9KMugOyiTofSsiDufTlkyW8vWd_JMxC6_sWVTBpkEkXOrCZRCqWeh32MwqWEKWxYgKIrMQl8Bw",
+        "expected": {
+          "valid": false,
+          "code": "signature_invalid"
+        }
+      },
+      {
+        "id": "noncanonical-padded-base64url-payload",
+        "envelope": "SP1.eyJjbGFpbWVkX2F0IjoiMjAyNi0wMS0wMVQwMDowMDowMC4wMDBaIiwiY29udGVudF9zaGEyNTYiOiJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIiwiZGlkIjoiZGlkOmtleTp6Nk1rZWhSZ2Y3eUpiZ2FHZllzZG9Bc0tkQlBFM2RqMkNZaG93UWRjanFTSmd2VmQiLCJleHBlcmltZW50Ijoic3dhcm1wcm9vZi00OC1lNDYzIiwibm9uY2UiOiI5MDA3MTk5MjU0NzQwOTkzIiwicGFyZW50X2V2ZW50X2lkcyI6WyJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIl0sInNjaGVtYSI6InN3YXJtcHJvb2YtZXZlbnQtdjEiLCJ0YXNrX2lkIjoiY29uZm9ybWFuY2UiLCJ0eXBlIjoiQ0xBSU0ifQ=.iqm37KnOeR2_iZtJMi0O1Rkh8r8uzDTcytchGPf9yZjH3D277Vu7PiRyTnTcESlwYPjPvwvM7jYPiwlsjfiqBw",
+        "expected": {
+          "valid": false,
+          "code": "base64url_invalid"
+        }
+      },
+      {
+        "id": "truncated-signature",
+        "envelope": "SP1.eyJjbGFpbWVkX2F0IjoiMjAyNi0wMS0wMVQwMDowMDowMC4wMDBaIiwiY29udGVudF9zaGEyNTYiOiJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIiwiZGlkIjoiZGlkOmtleTp6Nk1rZWhSZ2Y3eUpiZ2FHZllzZG9Bc0tkQlBFM2RqMkNZaG93UWRjanFTSmd2VmQiLCJleHBlcmltZW50Ijoic3dhcm1wcm9vZi00OC1lNDYzIiwibm9uY2UiOiI5MDA3MTk5MjU0NzQwOTkzIiwicGFyZW50X2V2ZW50X2lkcyI6WyJhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhIl0sInNjaGVtYSI6InN3YXJtcHJvb2YtZXZlbnQtdjEiLCJ0YXNrX2lkIjoiY29uZm9ybWFuY2UiLCJ0eXBlIjoiQ0xBSU0ifQ.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "expected": {
+          "valid": false,
+          "code": "signature_length_invalid"
+        }
+      },
+      {
+        "id": "invalid-did",
+        "envelope": "SP1.eyJjbGFpbWVkX2F0IjoiMjAyNi0wMS0wMVQwMDowMDowMC4wMDBaIiwiY29udGVudF9zaGEyNTYiOiJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiIiwiZGlkIjoiZGlkOmtleTp6bm90LWFuLWVkMjU1MTkta2V5IiwiZXhwZXJpbWVudCI6InN3YXJtcHJvb2YtNDgtZTQ2MyIsIm5vbmNlIjoiOTAwNzE5OTI1NDc0MDk5MyIsInBhcmVudF9ldmVudF9pZHMiOlsiYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYSJdLCJzY2hlbWEiOiJzd2FybXByb29mLWV2ZW50LXYxIiwidGFza19pZCI6ImNvbmZvcm1hbmNlIiwidHlwZSI6IkNMQUlNIn0.OIN_oyhLTDXa2R_E8hTbYlB9YoK0yQxJU1GtcD99Mp0cFZfdT_BI9_mlhesrmkGvz_g7s8tIMAophOpUjTyVCg",
+        "expected": {
+          "valid": false,
+          "code": "did_invalid"
+        }
+      }
+    ]
+  },
+  "contribution_index": {
+    "schema": "swarmproof-contribution-index-v1",
+    "fixture_verification_profile": {
+      "expected_controller": "did:key:z6MkehRgf7yJbgaGfYsdoAsKdBPE3dj2CYhowQdcjqSJgvVd",
+      "caveat": "The deployment JSON Schema pins the production controller. These cryptographic fixtures use an explicit test-controller override and are not production index documents."
+    },
+    "subject_id_input": "UTF8('SWARMPROOF-CONTRIBUTION-SUBJECT-V1\n' + canonical_json(lowercase_repository_subject))",
+    "index_signing_input": "UTF8('SWARMPROOF-CONTRIBUTION-INDEX-V1\n' + canonical_payload_json)",
+    "subject": {
+      "value": {
+        "type": "git-content",
+        "repository": "vector-lab/swarmproof-48",
+        "content_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "contribution_id": "4366d314121bb2a39562266a302216a647ec3ef6d916be4b27404f2e2dc5904c",
+      "signing_identity_canonical_json": "{\"content_sha256\":\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\",\"repository\":\"vector-lab/swarmproof-48\",\"type\":\"git-content\"}"
+    },
+    "document_cases": [
+      {
+        "id": "valid-sequence-1",
+        "file": "index/sequence-1.json",
+        "file_sha256": "6f9e06adbaecc6b728c2fa663bc08ba8c3679d971b5e5cc62d6164ae3c7f437a",
+        "expected": {
+          "valid": true,
+          "code": "ok",
+          "sequence": "1",
+          "index_sha256": "6f9e06adbaecc6b728c2fa663bc08ba8c3679d971b5e5cc62d6164ae3c7f437a",
+          "signing_input_sha256": "f5fe8e1a5ebb8ceec679c2d8a2ffe4c650bd8d05d7f029672bf9049c8e7a67b4",
+          "history_status": "root"
+        }
+      },
+      {
+        "id": "valid-sequence-2-standalone",
+        "file": "index/sequence-2.json",
+        "file_sha256": "0ed470a4927d2a633ea16d276dee05a6cfb98b8c2bf0e3a16645536978778e8e",
+        "expected": {
+          "valid": true,
+          "code": "ok",
+          "sequence": "2",
+          "index_sha256": "0ed470a4927d2a633ea16d276dee05a6cfb98b8c2bf0e3a16645536978778e8e",
+          "signing_input_sha256": "fdbd96d3216192e76cfd0195355c034802fe643c7ffe06842d9c11e33b3e8320",
+          "history_status": "not-checked"
+        }
+      },
+      {
+        "id": "valid-sequence-3-standalone",
+        "file": "index/sequence-3.json",
+        "file_sha256": "35ea46f22d0a72b2087d97afb430e2287db3fb6c106ca49e95f9ff537b74077f",
+        "expected": {
+          "valid": true,
+          "code": "ok",
+          "sequence": "3",
+          "index_sha256": "35ea46f22d0a72b2087d97afb430e2287db3fb6c106ca49e95f9ff537b74077f",
+          "signing_input_sha256": "7154309a8844e67cb87fcc56cebc0cf17df1b0d72a3db7e561e70d6ca49ab3c6",
+          "history_status": "not-checked"
+        }
+      },
+      {
+        "id": "broken-link-sequence-3-is-standalone-valid",
+        "file": "index/broken-link-sequence-3.json",
+        "file_sha256": "e39d092767206f039373cb6025651526594ba13365457713d74ee105eacc02cb",
+        "expected": {
+          "valid": true,
+          "code": "ok",
+          "sequence": "3",
+          "index_sha256": "e39d092767206f039373cb6025651526594ba13365457713d74ee105eacc02cb",
+          "signing_input_sha256": "11a9456ddb6b02628b2e6dcb78c3bd43832616fa2c5e0ace011c87368a80b42c",
+          "history_status": "not-checked"
+        }
+      },
+      {
+        "id": "sequence-gap-3-is-standalone-valid",
+        "file": "index/gap-sequence-3.json",
+        "file_sha256": "cbed2dd0b0bd314cccde5cd2fb3eab4fdd44d68a135360644e37b009db807374",
+        "expected": {
+          "valid": true,
+          "code": "ok",
+          "sequence": "3",
+          "index_sha256": "cbed2dd0b0bd314cccde5cd2fb3eab4fdd44d68a135360644e37b009db807374",
+          "signing_input_sha256": "b3b8eb35c372649a3268fe83757aa384f7b0e5cbcfa4727cf2e7aece9656fa37",
+          "history_status": "not-checked"
+        }
+      },
+      {
+        "id": "bad-signature",
+        "file": "index/bad-signature-sequence-1.json",
+        "file_sha256": "7f08e830e47c97860ed19eba3f87192f53f2985c6481089f9dcaf48ccfea91cd",
+        "expected": {
+          "valid": false,
+          "code": "signature_invalid"
+        }
+      },
+      {
+        "id": "tampered-payload-with-original-signature",
+        "file": "index/tampered-payload-sequence-1.json",
+        "file_sha256": "c77d4cc903934f9347f4576b3140e8de904a90ab3380e51af9a7b88b6e007358",
+        "expected": {
+          "valid": false,
+          "code": "signature_invalid"
+        }
+      },
+      {
+        "id": "noncanonical-pretty-json",
+        "file": "index/noncanonical-pretty-sequence-1.json",
+        "file_sha256": "a1897f81cf859b099df37122969b3b9acec55e4e8146b4df410d0ce221ffc0a3",
+        "expected": {
+          "valid": false,
+          "code": "canonical_file_invalid"
+        }
+      }
+    ],
+    "history_cases": [
+      {
+        "id": "valid-complete-chain",
+        "files": [
+          "index/sequence-1.json",
+          "index/sequence-2.json",
+          "index/sequence-3.json"
+        ],
+        "expected": {
+          "valid": true,
+          "code": "ok",
+          "index_count": 3,
+          "first_sequence": "1",
+          "current_sequence": "3"
+        }
+      },
+      {
+        "id": "history-does-not-start-at-one",
+        "files": [
+          "index/sequence-2.json",
+          "index/sequence-3.json"
+        ],
+        "expected": {
+          "valid": false,
+          "code": "history_root_invalid"
+        }
+      },
+      {
+        "id": "history-link-mismatch",
+        "files": [
+          "index/sequence-1.json",
+          "index/sequence-2.json",
+          "index/broken-link-sequence-3.json"
+        ],
+        "expected": {
+          "valid": false,
+          "code": "history_link_mismatch"
+        }
+      },
+      {
+        "id": "history-sequence-gap",
+        "files": [
+          "index/sequence-1.json",
+          "index/gap-sequence-3.json"
+        ],
+        "expected": {
+          "valid": false,
+          "code": "history_sequence_gap"
+        }
+      },
+      {
+        "id": "history-tampered-root",
+        "files": [
+          "index/tampered-payload-sequence-1.json",
+          "index/sequence-2.json"
+        ],
+        "expected": {
+          "valid": false,
+          "code": "signature_invalid"
+        }
+      },
+      {
+        "id": "history-noncanonical-root",
+        "files": [
+          "index/noncanonical-pretty-sequence-1.json",
+          "index/sequence-2.json"
+        ],
+        "expected": {
+          "valid": false,
+          "code": "canonical_file_invalid"
+        }
+      }
+    ]
+  }
+}
