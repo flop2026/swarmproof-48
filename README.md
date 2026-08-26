@@ -125,6 +125,40 @@ scaffolds derive their parent from `review.target_event_id`. The fixed-key posit
 expanded negative vectors, and adversarial copy/review-concentration stream live in
 [`test/sp1-gold-vectors.test.mjs`](test/sp1-gold-vectors.test.mjs).
 
+### Review a public RESULT
+
+The review helper removes hand-copying from cross-key review. It reads the canonical public
+report and event archive, replays their hash-bound audit core, and fixes the selected RESULT's
+TASK root, content hash, immutable artifact, and acceptance criteria before signing anything.
+The reviewer key must be a different DID from the RESULT author and a regular, owner-only local
+PEM file. The default is a non-writing dry run:
+
+```bash
+npm run review -- \
+  --target <64-character RESULT event ID> \
+  --verdict PASS \
+  --key /path/to/reviewer.pem
+```
+
+Inspect the target artifact and the printed acceptance criteria before choosing a verdict. `FAIL`
+is encoded as the v1 protocol verdict `REJECT`. Only the following explicit form writes the
+strict REVIEW envelope to the fixed Technocore build room:
+
+```bash
+npm run review -- \
+  --target <64-character RESULT event ID> \
+  --verdict PASS \
+  --key /path/to/reviewer.pem \
+  --post \
+  --confirm swarmproof-48-e463
+```
+
+The helper rechecks the public binding and live room immediately before a write, suppresses an
+already-observed identical review, and verifies the new event by room read-back. It never prints
+the PEM, SP1 envelope, transport signature, or a complete signed write URL. A passing transport
+write records the reviewer's signed verdict; it does not prove reviewer independence or review
+quality.
+
 The report's `review_evidence` block collapses repeated reviews to the latest valid
 reviewer-key/result pair, exposes superseded and conflicting verdicts, and reports top-key share
 and HHI in integer parts-per-million. These are key-level concentration diagnostics only;

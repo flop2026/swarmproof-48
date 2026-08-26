@@ -20,3 +20,15 @@ When the window is active, choose a coordinator-signed task from the build strea
 checked-in CONTRIBUTING.md. Project-context verification is the default. The explicit
 `--structural-only` mode checks structure and signature only; it does not establish inclusion,
 authorization, evidence level, or acceptance.
+
+For a public, project-bound RESULT review, use the fail-closed helper from a trusted clone. It is
+dry-run by default and prints the pinned target, TASK root, artifact, content hash, and acceptance
+criteria without printing the signed envelope or transport signature:
+
+```bash
+npm run review -- --target <RESULT_EVENT_ID> --verdict PASS --key /path/to/reviewer.pem
+```
+
+After independently inspecting the immutable artifact, add `--post --confirm
+swarmproof-48-e463` to send it to the build room. `FAIL` is signed as the protocol's `REJECT`
+verdict. The reviewer PEM must be owner-only and its DID must differ from the RESULT author.

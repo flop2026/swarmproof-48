@@ -25,6 +25,7 @@
     "control-claim": "node bin/control-claim.mjs",
     "protocol": "node bin/swarmproof.mjs",
     "replay": "node bin/swarmproof.mjs replay",
+    "review": "node bin/swarmproof.mjs review",
     "verify:report": "node bin/swarmproof.mjs verify-report"
   },
   "dependencies": {

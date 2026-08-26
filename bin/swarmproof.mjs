@@ -21,7 +21,20 @@ import {
   COORDINATOR_ARTIFACT_RESERVATION,
   verifyArtifactEvidence,
 } from "../lib/evidence.mjs";
-import { createEnvelopeFromFiles, verifyEnvelope } from "../lib/protocol.mjs";
+import { EXPERIMENT, createEnvelopeFromFiles, verifyEnvelope } from "../lib/protocol.mjs";
+import {
+  acquireReviewLock,
+  assertReviewSnapshotTrusted,
+  assertReviewSourceCommitTrusted,
+  fetchPublicReviewDocuments,
+  fetchReviewRoom,
+  postSignedReview,
+  prepareSignedReview,
+  publicReviewSummary,
+  readSecureReviewKey,
+  stableTargetBinding,
+  validateAndBindPublicReview,
+} from "../lib/review.mjs";
 
 const MEBIBYTE = 1024 * 1024;
 const executeFile = promisify(execFile);
@@ -81,7 +94,9 @@ function usage() {
   swarmproof sign --payload payload.json --key private-key.pem --structural-only
   swarmproof verify (--envelope SP1... | --file envelope.txt) --structural-only
   swarmproof replay --events events.jsonl [--proposals proposals.jsonl] [--config config/event.json] [--tasks config/tasks.json] [--out report.json]
-  swarmproof verify-report [--report public/data/report.json] [--status public/data/status.json] [--events public/data/events.jsonl] [--proposals public/data/proposals.jsonl] [--config config/event.json] [--tasks config/tasks.json] [--out verification.json]`);
+  swarmproof verify-report [--report public/data/report.json] [--status public/data/status.json] [--events public/data/events.jsonl] [--proposals public/data/proposals.jsonl] [--config config/event.json] [--tasks config/tasks.json] [--out verification.json]
+  swarmproof review --target RESULT_EVENT_ID --verdict PASS|FAIL --key reviewer.pem [--config config/event.json] [--tasks config/tasks.json] [--dry-run]
+  swarmproof review --target RESULT_EVENT_ID --verdict PASS|FAIL --key reviewer.pem --post --confirm ${EXPERIMENT}`);
   console.error("\nDefault sign/verify enforce this project's repository, task manifest, and coordinator authority. --structural-only checks only protocol structure and signature; it does not establish project authorization or acceptance.");
   process.exit(2);
 }
@@ -89,11 +104,13 @@ function usage() {
 function optionsOf(arguments_) {
   const options = new Map();
   const flags = new Set();
+  const booleanFlags = new Set(["structural-only", "post", "dry-run"]);
   for (let index = 0; index < arguments_.length; index += 1) {
     const token = arguments_[index];
-    if (token === "--structural-only") {
-      if (flags.has("structural-only")) usage();
-      flags.add("structural-only");
+    const flagName = token.startsWith("--") ? token.slice(2) : "";
+    if (booleanFlags.has(flagName)) {
+      if (flags.has(flagName)) usage();
+      flags.add(flagName);
       continue;
     }
     if (!token.startsWith("--") || index + 1 >= arguments_.length || arguments_[index + 1].startsWith("--")) usage();
@@ -107,6 +124,12 @@ function optionsOf(arguments_) {
 
 function requireOnly(options, allowed) {
   for (const name of options.keys()) {
+    if (!allowed.has(name)) usage();
+  }
+}
+
+function requireOnlyFlags(flags, allowed) {
+  for (const name of flags) {
     if (!allowed.has(name)) usage();
   }
 }
@@ -379,6 +402,31 @@ async function projectProtocolOptions(options) {
   };
 }
 
+async function loadReviewContext(options, targetEventId, decision, now = new Date()) {
+  const configPath = options.get("config") ?? "config/event.json";
+  const tasksPath = options.get("tasks") ?? "config/tasks.json";
+  const [config, manifest, published] = await Promise.all([
+    loadJson(configPath, FILE_LIMITS.config, "config").then(result => result.value),
+    loadJson(tasksPath, FILE_LIMITS.tasks, "task manifest").then(result => result.value),
+    fetchPublicReviewDocuments(),
+  ]);
+  const context = validateAndBindPublicReview({
+    config,
+    manifest,
+    ...published,
+    targetEventId,
+    decision,
+    now,
+  });
+  await assertReviewSourceCommitTrusted(context.sourceCommit, process.cwd());
+  const evidenceCommit = await assertReviewSnapshotTrusted({
+    ...published,
+    sourceCommit: context.sourceCommit,
+    repositoryRoot: process.cwd(),
+  });
+  return { ...context, evidenceCommit };
+}
+
 async function loadJsonLines(filePath, maximumBytes, maximumRecords, label) {
   const content = await readBoundedText(filePath, maximumBytes, label);
   const records = content
@@ -481,6 +529,7 @@ async function main() {
   const structuralOnly = flags.has("structural-only");
 
   if (command === "sign") {
+    requireOnlyFlags(flags, new Set(["structural-only"]));
     requireOnly(options, new Set(["payload", "key", "config", "tasks"]));
     if (structuralOnly && (options.has("config") || options.has("tasks"))) usage();
     const payloadPath = options.get("payload");
@@ -499,6 +548,7 @@ async function main() {
   }
 
   if (command === "verify") {
+    requireOnlyFlags(flags, new Set(["structural-only"]));
     requireOnly(options, new Set(["envelope", "file", "config", "tasks"]));
     if (options.has("envelope") === options.has("file")) usage();
     if (structuralOnly && (options.has("config") || options.has("tasks"))) usage();
@@ -518,6 +568,7 @@ async function main() {
   }
 
   if (command === "replay") {
+    requireOnlyFlags(flags, new Set());
     if (structuralOnly) usage();
     requireOnly(options, new Set(["events", "proposals", "config", "tasks", "out"]));
     const { result } = await replayProject(options);
@@ -528,6 +579,7 @@ async function main() {
   }
 
   if (command === "verify-report") {
+    requireOnlyFlags(flags, new Set());
     if (structuralOnly) usage();
     requireOnly(options, new Set(["report", "status", "events", "proposals", "config", "tasks", "out"]));
     const [reportDocument, statusDocument] = await Promise.all([
@@ -625,6 +677,68 @@ async function main() {
     const output = `${JSON.stringify(verification, null, 2)}\n`;
     if (options.get("out")) await writeFile(options.get("out"), output, "utf8");
     else process.stdout.write(output);
+    return;
+  }
+
+  if (command === "review") {
+    requireOnlyFlags(flags, new Set(["post", "dry-run"]));
+    requireOnly(options, new Set(["target", "verdict", "key", "config", "tasks", "confirm"]));
+    assert(!flags.has("post") || !flags.has("dry-run"), "--post and --dry-run cannot be combined.");
+    const shouldPost = flags.has("post");
+    const confirmation = options.get("confirm");
+    if (shouldPost) assert(confirmation === EXPERIMENT, `Posting requires --confirm ${EXPERIMENT}.`);
+    else assert(confirmation === undefined, "--confirm is only accepted with --post.");
+    const targetEventId = options.get("target");
+    const decision = options.get("verdict");
+    const keyPath = options.get("key");
+    if (!targetEventId || !decision || !keyPath) usage();
+
+    const privateKeyPem = await readSecureReviewKey(keyPath);
+    const preflightContext = await loadReviewContext(options, targetEventId, decision);
+    const preflightRoom = await fetchReviewRoom({ room: preflightContext.config.build_room });
+    const preflightPrepared = prepareSignedReview({
+      context: preflightContext,
+      roomData: preflightRoom,
+      privateKeyPem,
+    });
+    if (!shouldPost) {
+      process.stdout.write(`${JSON.stringify(publicReviewSummary({
+        context: preflightContext,
+        prepared: preflightPrepared,
+        action: preflightPrepared.duplicate ? "already_reviewed" : "would_post",
+        dryRun: true,
+      }), null, 2)}\n`);
+      return;
+    }
+
+    const releaseLock = await acquireReviewLock(process.env.SWARMPROOF_REVIEW_LOCK_FILE);
+    try {
+      const context = await loadReviewContext(options, targetEventId, decision);
+      assert(
+        stableTargetBinding(context) === stableTargetBinding(preflightContext),
+        "Target binding changed after review preflight; rerun against the new public snapshot.",
+      );
+      const roomData = await fetchReviewRoom({ room: context.config.build_room });
+      const prepared = prepareSignedReview({ context, roomData, privateKeyPem });
+      if (prepared.duplicate) {
+        process.stdout.write(`${JSON.stringify(publicReviewSummary({
+          context,
+          prepared,
+          action: "already_reviewed",
+          dryRun: false,
+        }), null, 2)}\n`);
+        return;
+      }
+      await postSignedReview({ context, prepared, privateKeyPem });
+      process.stdout.write(`${JSON.stringify(publicReviewSummary({
+        context,
+        prepared,
+        action: "posted",
+        dryRun: false,
+      }), null, 2)}\n`);
+    } finally {
+      await releaseLock();
+    }
     return;
   }
 
