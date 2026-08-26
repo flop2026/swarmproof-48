@@ -26,6 +26,13 @@ signature. The generator reads the private key from an owner-only regular file, 
 zeros the input buffer after parsing, and never prints the PEM or signature. JavaScript and the
 host operating system do not provide a guarantee that all key-object memory is immediately wiped.
 
+The optional contribution index is free-text-free. It retains only the public DID, canonical UTC
+issuance time, hashes, full Git commit IDs, repository/path locators, bounded Technocore sequence
+metadata, configured public project identifiers, and typed evidence status constants. It has no
+fields for a legal name, email, wallet, account-recovery data, device path, IP address, arbitrary
+message text, or private key. Official-task evidence can record `submitted` only and must keep
+official acceptance and reward status at `not-claimed`.
+
 Hashes of public short text may be vulnerable to guessing. They are published only where they
 are needed for reproducibility, and this limitation is disclosed in every dataset manifest.
 

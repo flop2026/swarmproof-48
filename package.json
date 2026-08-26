@@ -23,6 +23,8 @@
     "launch:tasks:dry-run": "node scripts/launch.mjs --stage=tasks --dry-run",
     "launch:results:dry-run": "node scripts/launch.mjs --stage=results --dry-run",
     "control-claim": "node bin/control-claim.mjs",
+    "contribution-index": "node bin/contribution-index.mjs",
+    "verify:contributions": "node bin/contribution-index.mjs verify --project --publications",
     "protocol": "node bin/swarmproof.mjs",
     "replay": "node bin/swarmproof.mjs replay",
     "review": "node bin/swarmproof.mjs review",

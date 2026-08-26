@@ -55,6 +55,44 @@ independently verified copies at the fixed GitHub raw path and Pages well-known 
 copies still share one deployment chain and are not independent witnesses. See
 [CONTROL-CLAIM.md](CONTROL-CLAIM.md) for the byte-level specification and verifier.
 
+The repository also contains a fail-closed
+[DID-signed contribution-index implementation](CONTRIBUTION-INDEX.md). The index counts immutable
+content subjects, not evidence rows: attribution, replay, cross-key review, internal promotion,
+upstream merge, external adoption, and official-task submission remain separately named facets of
+the same subject. They are never summed into a single score. A signed index is still the DID
+controller's assertion; it does not turn server metadata into a signature, a different DID into
+an independent operator, an upstream merge into authorship proof, or a task submission into
+official acceptance or reward eligibility.
+
+Index generation is intentionally a two-step local operation. `prepare` first fully replays the
+public report and pins the exact Git commit that published its report, status, event archive, and
+proposal archive. `create` then signs the inspected input with the owner-only DID key. No private
+key or signing secret is embedded; a production index is created only by that separate local
+signing step.
+
+```bash
+npm run contribution-index -- prepare --out /tmp/contribution-index-input.json
+
+npm run contribution-index -- create \
+  --input /tmp/contribution-index-input.json \
+  --key /path/to/coordinator.pem \
+  --out public/.well-known/swarmproof-contribution-index-v1.json
+
+npm run contribution-index -- verify \
+  --file public/.well-known/swarmproof-contribution-index-v1.json \
+  --project
+```
+
+After the exact file is published at both configured well-known endpoints, add `--publications`.
+That online mode fetches only implementation-pinned GitHub and Pages URLs with redirects disabled
+and bounded bodies. It never follows an index-supplied URL.
+
+The standard one-command verification after publication is:
+
+```bash
+npm run verify:contributions
+```
+
 ## Local verification
 
 ```bash

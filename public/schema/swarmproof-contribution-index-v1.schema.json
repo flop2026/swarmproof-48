@@ -1,0 +1,249 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://swarmproof-48-e463.pages.dev/schema/swarmproof-contribution-index-v1.schema.json",
+  "title": "SwarmProof DID-signed contribution index v1",
+  "description": "A strict controller assertion over deduplicated contribution subjects and separately typed evidence references. Runtime verification additionally enforces canonical JSON bytes, ordering, derived contribution IDs, project replay, and the Ed25519 signature.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["payload", "proof"],
+  "properties": {
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "project",
+        "purpose",
+        "controller",
+        "issued_at",
+        "sequence",
+        "previous_index_sha256",
+        "control_claim_sha256",
+        "contributions"
+      ],
+      "properties": {
+        "schema": { "const": "swarmproof-contribution-index-v1" },
+        "project": { "const": "swarmproof-48-e463" },
+        "purpose": { "const": "controller-curated-contribution-evidence-index" },
+        "controller": {
+          "const": "did:key:z6MkqNyQTuVH8ZqJc5HZ2M9FGDDWBmVupBrX96G3EA3J5gSw"
+        },
+        "issued_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z$"
+        },
+        "sequence": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,18}$"
+        },
+        "previous_index_sha256": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/hash" }
+          ]
+        },
+        "control_claim_sha256": { "$ref": "#/$defs/hash" },
+        "contributions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 512,
+          "items": { "$ref": "#/$defs/contribution" }
+        }
+      }
+    },
+    "proof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "encoding", "value"],
+      "properties": {
+        "type": { "const": "Ed25519" },
+        "encoding": { "const": "base64url" },
+        "value": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{86}$"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "repository": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]{1,39}/[A-Za-z0-9_.-]{1,100}$"
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 240,
+      "pattern": "^(?!(?:\\.{1,2}|\\.[gG][iI][tT])(?:/|$))(?!.*\\/(?:\\.{1,2}|\\.[gG][iI][tT])(?:/|$))[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$"
+    },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "repository", "content_sha256"],
+      "properties": {
+        "type": { "const": "git-content" },
+        "repository": { "$ref": "#/$defs/repository" },
+        "content_sha256": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "contribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contribution_id", "subject", "evidence"],
+      "properties": {
+        "contribution_id": { "$ref": "#/$defs/hash" },
+        "subject": { "$ref": "#/$defs/subject" },
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": { "$ref": "#/$defs/evidence" }
+        }
+      }
+    },
+    "evidence": {
+      "oneOf": [
+        { "$ref": "#/$defs/swarmproofResult" },
+        { "$ref": "#/$defs/serverObservation" },
+        { "$ref": "#/$defs/crossKeyReview" },
+        { "$ref": "#/$defs/upstreamAcceptance" },
+        { "$ref": "#/$defs/externalAdoption" },
+        { "$ref": "#/$defs/officialTask" }
+      ]
+    },
+    "swarmproofResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "result_event_id", "publication_commit", "report_sha256", "snapshot_manifest_sha256"],
+      "properties": {
+        "kind": { "const": "swarmproof-result-snapshot" },
+        "result_event_id": { "$ref": "#/$defs/hash" },
+        "publication_commit": { "$ref": "#/$defs/commit" },
+        "report_sha256": { "$ref": "#/$defs/hash" },
+        "snapshot_manifest_sha256": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "serverObservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind", "service", "room", "source_seq", "source_ts", "message_sha256",
+        "transport_authentication"
+      ],
+      "properties": {
+        "kind": { "const": "server-observation" },
+        "service": { "const": "technocore.chat" },
+        "room": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9_-]{0,47}$"
+        },
+        "source_seq": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,18}$"
+        },
+        "source_ts": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z$"
+        },
+        "message_sha256": { "$ref": "#/$defs/hash" },
+        "transport_authentication": { "const": "server-reported" }
+      }
+    },
+    "crossKeyReview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind", "review_event_id", "target_event_id", "publication_commit", "report_sha256",
+        "snapshot_manifest_sha256"
+      ],
+      "properties": {
+        "kind": { "const": "cross-key-review" },
+        "review_event_id": { "$ref": "#/$defs/hash" },
+        "target_event_id": { "$ref": "#/$defs/hash" },
+        "publication_commit": { "$ref": "#/$defs/commit" },
+        "report_sha256": { "$ref": "#/$defs/hash" },
+        "snapshot_manifest_sha256": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "upstreamAcceptance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind", "forge", "repository", "pull_request", "accepted_commit", "path",
+        "content_sha256"
+      ],
+      "properties": {
+        "kind": { "const": "upstream-acceptance" },
+        "forge": { "const": "github" },
+        "repository": { "$ref": "#/$defs/repository" },
+        "pull_request": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,9}$"
+        },
+        "accepted_commit": { "$ref": "#/$defs/commit" },
+        "path": { "$ref": "#/$defs/path" },
+        "content_sha256": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "externalAdoption": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind", "forge", "repository", "commit", "path", "content_sha256", "relation",
+        "marker"
+      ],
+      "properties": {
+        "kind": { "const": "external-adoption" },
+        "forge": { "const": "github" },
+        "repository": { "$ref": "#/$defs/repository" },
+        "commit": { "$ref": "#/$defs/commit" },
+        "path": { "$ref": "#/$defs/path" },
+        "content_sha256": { "$ref": "#/$defs/hash" },
+        "relation": { "enum": ["dependency", "invocation", "citation"] },
+        "marker": {
+          "enum": [
+            "https://github.com/flop2026/swarmproof-48",
+            "https://swarmproof-48-e463.pages.dev",
+            "did:key:z6MkqNyQTuVH8ZqJc5HZ2M9FGDDWBmVupBrX96G3EA3J5gSw"
+          ]
+        }
+      }
+    },
+    "officialTask": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind", "authority", "task_uri", "task_source_sha256", "submission_uri",
+        "submission_sha256", "stage", "official_acceptance", "reward_status"
+      ],
+      "properties": {
+        "kind": { "const": "official-task" },
+        "authority": { "enum": ["flop-labs-x", "crypto-hayes-x"] },
+        "task_uri": {
+          "type": "string",
+          "pattern": "^https://x\\.com/(?:flop_labs|CryptoHayes)/status/[1-9][0-9]{1,24}$"
+        },
+        "task_source_sha256": { "$ref": "#/$defs/hash" },
+        "submission_uri": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://(?:github\\.com/flop2026/swarmproof-48(?:/[^?#]*)?|swarmproof-48-e463\\.pages\\.dev(?:/[^?#]*)?|technocore\\.chat/r/[a-z0-9][a-z0-9_-]{0,47})$"
+        },
+        "submission_sha256": { "$ref": "#/$defs/hash" },
+        "stage": { "const": "submitted" },
+        "official_acceptance": { "const": "not-claimed" },
+        "reward_status": { "const": "not-claimed" }
+      }
+    }
+  }
+}

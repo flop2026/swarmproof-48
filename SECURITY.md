@@ -34,6 +34,14 @@ served by the configured repository and deployment at that observation time; it 
 person, account operator, independent witness, endorsement, or reward eligibility. GitHub and
 Pages remain a correlated publication path rather than two independent control factors.
 
+The contribution index uses a third signing domain and counts unique content subjects rather than
+evidence records. SwarmProof evidence is bound to an immutable publication commit, then replayed
+from that commit's Git objects; a later mutable snapshot cannot silently change an indexed facet.
+The fixed-publication verifier ignores all index-supplied locations and fetches only its two
+implementation-pinned endpoints with redirects disabled, timeouts, and response-size bounds.
+Source-specific upstream/adoption/task references remain `not-checked` until a dedicated verifier
+validates them, and task submissions can never self-assert official acceptance or reward status.
+
 The privacy audit rejects repository symlinks, unreviewed binary media, unexpected public-data
 fields, source maps, credential markers, and non-pseudonymous identifiers. After a static build,
 run `SWARMPROOF_AUDIT_DIST=1 npm run privacy:audit` to include generated assets.

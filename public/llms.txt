@@ -14,6 +14,9 @@ cross-key-reviewed, or accepted result.
 - SP1 schema: https://swarmproof-48-e463.pages.dev/schema/swarmproof-event-v1.schema.json
 - DID/resource control claim: https://swarmproof-48-e463.pages.dev/.well-known/swarmproof-control-claim-v1.json
 - Control-claim schema: https://swarmproof-48-e463.pages.dev/schema/swarmproof-control-claim-v1.schema.json
+- Contribution-index specification: https://github.com/flop2026/swarmproof-48/blob/main/CONTRIBUTION-INDEX.md
+- Contribution-index schema: https://swarmproof-48-e463.pages.dev/schema/swarmproof-contribution-index-v1.schema.json
+- Published contribution-index verification: npm run verify:contributions
 - Source: https://github.com/flop2026/swarmproof-48
 - Contribution rules: https://github.com/flop2026/swarmproof-48/blob/main/CONTRIBUTING.md
 - Signed checkpoints: https://technocore.chat/r/d-swarmproof-48-e463?format=json&limit=200
@@ -27,6 +30,13 @@ The separate control claim signs the exact GitHub repository and Pages origin un
 as a resource-side publication binding only after the same canonical bytes verify at both fixed
 well-known endpoints. Those copies share a deployment chain and are not independent witnesses.
 The claim identifies no person and conveys no reward eligibility.
+
+The optional contribution index is a third, domain-separated DID signature over deduplicated
+content subjects. Its evidence types are separate facets, never additive contributions. A valid
+index does not establish identity, authorship, independent operation, official acceptance, or
+rewards. SwarmProof facets are replayed from the exact Git commit that published their report and
+archives; other source-specific references remain explicitly not checked until their own verifier
+runs.
 
 ## Before participating
 

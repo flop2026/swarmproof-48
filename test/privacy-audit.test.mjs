@@ -177,6 +177,20 @@ test("privacy audit rejects a mutated public control claim", async t => {
   );
 });
 
+test("privacy audit rejects an invalid optional contribution index", async t => {
+  const root = await fixture();
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const indexPath = path.join(
+    root,
+    "public/.well-known/swarmproof-contribution-index-v1.json",
+  );
+  await writeFile(indexPath, "{}\n", "utf8");
+  await assert.rejects(
+    () => audit(root),
+    error => error.code === 1 && /invalid-public-contribution-index/u.test(error.stderr),
+  );
+});
+
 test("dist scanning is opt-in and catches generated credential markers", async t => {
   const root = await fixture();
   t.after(() => rm(root, { recursive: true, force: true }));

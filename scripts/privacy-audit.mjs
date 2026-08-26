@@ -7,6 +7,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { canonicalize } from "../lib/canonical.mjs";
 import { verifyControlClaim } from "../lib/control-claim.mjs";
+import { verifyContributionIndexControlClaim } from "../lib/contribution-index.mjs";
 import { verifyEnvelope } from "../lib/protocol.mjs";
 
 const executeFile = promisify(execFile);
@@ -860,6 +861,23 @@ async function validatePublicControlClaim(violations, publicDirectory, expectedB
   }
 }
 
+async function validatePublicContributionIndex(violations, publicDirectory) {
+  const indexFile = path.join(publicDirectory, ".well-known", "swarmproof-contribution-index-v1.json");
+  const claimFile = path.join(publicDirectory, ".well-known", "swarmproof-control-claim-v1.json");
+  try {
+    const [indexText, claimText] = await Promise.all([
+      readFile(indexFile, "utf8"),
+      readFile(claimFile, "utf8"),
+    ]);
+    verifyContributionIndexControlClaim(indexText, claimText);
+    return indexText;
+  } catch (error) {
+    if (error.code === "ENOENT") return null;
+    recordSchemaViolation(violations, indexFile, "invalid-public-contribution-index", error);
+    return null;
+  }
+}
+
 async function validateGitHistory(violations) {
   let stdout;
   try {
@@ -904,9 +922,17 @@ async function main() {
   await scanLocalDenylist(files, deniedValues, violations);
   await validatePublicData(violations, path.join(ROOT, "public/data"));
   const sourceControlClaim = await validatePublicControlClaim(violations, path.join(ROOT, "public"));
+  const sourceContributionIndex = await validatePublicContributionIndex(violations, path.join(ROOT, "public"));
   if (INCLUDE_DIST) {
     await validatePublicData(violations, path.join(ROOT, "dist/data"));
     await validatePublicControlClaim(violations, path.join(ROOT, "dist"), sourceControlClaim);
+    const builtContributionIndex = await validatePublicContributionIndex(violations, path.join(ROOT, "dist"));
+    if (sourceContributionIndex !== builtContributionIndex) {
+      violations.push({
+        file: "dist/.well-known/swarmproof-contribution-index-v1.json",
+        rule: "built-contribution-index-differs-from-source",
+      });
+    }
   }
   if (process.env.SWARMPROOF_CHECK_HISTORY === "1") await validateGitHistory(violations);
 
