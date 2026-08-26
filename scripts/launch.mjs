@@ -649,7 +649,7 @@ async function postSignedEvent({ room, created, privateKeyPem, config, manifest 
   try {
     response = await fetch(`${TECHNCORE_ORIGIN}/r/${encodeURIComponent(room)}?format=json`, {
       method: "POST",
-      headers: { "content-type": "application/json", "user-agent": "swarmproof-48-launch/1" },
+      headers: { "content-type": "application/json" },
       body: JSON.stringify({
         did: config.coordinator_did,
         sig: signature,

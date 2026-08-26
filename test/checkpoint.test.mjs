@@ -111,13 +111,25 @@ test("accepts only a published source commit that is the trusted-main merge base
     status: "ahead",
     base_commit: { sha: sourceCommit },
     merge_base_commit: { sha: sourceCommit },
-    head_commit: { sha: mainCommit },
+    commits: [{ sha: mainCommit }],
   }, sourceCommit), { eligible: true, main_commit: mainCommit });
+  assert.deepEqual(assessSourceCommitComparison({
+    status: "identical",
+    base_commit: { sha: sourceCommit },
+    merge_base_commit: { sha: sourceCommit },
+    commits: [],
+  }, sourceCommit), { eligible: true, main_commit: sourceCommit });
+  assert.throws(() => assessSourceCommitComparison({
+    status: "ahead",
+    base_commit: { sha: sourceCommit },
+    merge_base_commit: { sha: sourceCommit },
+    commits: [],
+  }, sourceCommit), /comparison head is invalid/u);
   assert.throws(() => assessSourceCommitComparison({
     status: "diverged",
     base_commit: { sha: sourceCommit },
     merge_base_commit: { sha: "e".repeat(40) },
-    head_commit: { sha: mainCommit },
+    commits: [{ sha: mainCommit }],
   }, sourceCommit), /not an ancestor/u);
 });
 

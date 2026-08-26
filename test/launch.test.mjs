@@ -139,6 +139,13 @@ test("launcher preflight and recheck both bind the same public event archive", a
   assert.match(recheck, /eventArchiveContent === preflightState\.eventArchive\.content/u);
 });
 
+test("signed launch writes use only the protocol-required content type", async () => {
+  const source = await readFile(new URL("../scripts/launch.mjs", import.meta.url), "utf8");
+  const signedWrite = source.slice(source.indexOf("async function postSignedEvent"), source.indexOf("async function postStartEvidence"));
+  assert.match(signedWrite, /headers: \{ "content-type": "application\/json" \}/u);
+  assert.doesNotMatch(signedWrite, /user-agent/u);
+});
+
 test("creates and re-verifies eight coordinator TASK events without parents", () => {
   const input = fixture();
   const created = createLaunchTaskEvents({
