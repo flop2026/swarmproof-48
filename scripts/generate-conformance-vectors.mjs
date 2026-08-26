@@ -4,6 +4,7 @@ import {
 } from "node:crypto";
 import {
   mkdir,
+  readdir,
   readFile,
   writeFile,
 } from "node:fs/promises";
@@ -93,6 +94,38 @@ function addGenerated(relativePath, contents) {
   generated.set(relativePath, contents);
 }
 
+async function listCorpusFiles(directory, prefix = "") {
+  const files = [];
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if (entry.isSymbolicLink()) {
+      throw new Error(`Conformance corpus contains a symlink: ${relativePath}`);
+    }
+    if (entry.isDirectory()) {
+      files.push(...await listCorpusFiles(path.join(directory, entry.name), relativePath));
+    } else if (entry.isFile()) {
+      files.push(relativePath);
+    } else {
+      throw new Error(`Conformance corpus contains a non-regular entry: ${relativePath}`);
+    }
+  }
+  return files.sort();
+}
+
+async function assertExactCorpus() {
+  const expected = ["README.md", ...generated.keys()].sort();
+  const actual = await listCorpusFiles(OUTPUT_ROOT);
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+    const expectedSet = new Set(expected);
+    const actualSet = new Set(actual);
+    const missing = expected.filter(file => !actualSet.has(file));
+    const unexpected = actual.filter(file => !expectedSet.has(file));
+    throw new Error(
+      `Conformance corpus file set mismatch; missing=${missing.join(",") || "none"}; unexpected=${unexpected.join(",") || "none"}`,
+    );
+  }
+}
+
 async function materialize() {
   for (const [relativePath, contents] of generated) {
     const target = path.join(OUTPUT_ROOT, relativePath);
@@ -109,6 +142,7 @@ async function materialize() {
     await mkdir(path.dirname(target), { recursive: true });
     await writeFile(target, contents, { encoding: "utf8", mode: 0o644 });
   }
+  await assertExactCorpus();
 }
 
 const seed = Buffer.from(SEED_HEX, "hex");

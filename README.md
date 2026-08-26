@@ -106,6 +106,13 @@ The standard one-command verification after publication is:
 npm run verify:contributions
 ```
 
+Independent implementations can use the public
+[language-neutral conformance kit](public/conformance/v1/README.md). Its
+[machine-readable manifest](public/conformance/v1/manifest.json) includes a prominently labeled
+public test key, exact canonical UTF-8 bytes and hashes, valid and invalid SP1 cases, and complete
+contribution-index history outcomes. The fixtures are ASCII-scoped and deliberately use a test
+controller; they contain neither the production key nor a production signature.
+
 ## Local verification
 
 ```bash

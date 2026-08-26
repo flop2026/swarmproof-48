@@ -3,7 +3,7 @@ import {
   createPrivateKey,
   createPublicKey,
 } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import test from "node:test";
 import { canonicalize } from "../lib/canonical.mjs";
 import {
@@ -20,8 +20,20 @@ import { SIGNING_DOMAIN, verifyEnvelope } from "../lib/protocol.mjs";
 
 const ROOT = new URL("../public/conformance/v1/", import.meta.url);
 const manifest = JSON.parse(await readFile(new URL("manifest.json", ROOT), "utf8"));
+const projectConfig = JSON.parse(await readFile(new URL("../config/event.json", import.meta.url), "utf8"));
 const expectedController = manifest.fixture_key.did;
 const indexOptions = { expectedController };
+
+async function readCorpusFiles(directory = ROOT) {
+  const texts = [];
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    const url = new URL(`${entry.name}${entry.isDirectory() ? "/" : ""}`, directory);
+    if (entry.isDirectory()) texts.push(...await readCorpusFiles(url));
+    else if (entry.isFile()) texts.push(await readFile(url, "utf8"));
+    else throw new Error(`Unexpected conformance corpus entry: ${entry.name}`);
+  }
+  return texts;
+}
 
 function classifyEventError(error) {
   const message = String(error?.message ?? error);
@@ -176,10 +188,7 @@ test("complete index-history vectors distinguish signature, root, sequence, and 
 });
 
 test("fixture corpus does not contain the configured production controller DID", async () => {
-  const productionController = "did:key:z6MkqNyQTuVH8ZqJc5HZ2M9FGDDWBmVupBrX96G3EA3J5gSw";
-  const texts = await Promise.all([
-    readFile(new URL("manifest.json", ROOT), "utf8"),
-    ...manifest.contribution_index.document_cases.map(vector => readFile(new URL(vector.file, ROOT), "utf8")),
-  ]);
-  assert.ok(texts.every(text => !text.includes(productionController)));
+  assert.match(projectConfig.coordinator_did, /^did:key:z/u);
+  const texts = await readCorpusFiles();
+  assert.ok(texts.every(text => !text.includes(projectConfig.coordinator_did)));
 });

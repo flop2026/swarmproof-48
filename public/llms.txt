@@ -18,6 +18,8 @@ cross-key-reviewed, or accepted result.
 - Contribution-index specification: https://github.com/flop2026/swarmproof-48/blob/main/CONTRIBUTION-INDEX.md
 - Contribution-index schema: https://swarmproof-48-e463.pages.dev/schema/swarmproof-contribution-index-v1.schema.json
 - Published contribution-index verification: npm run verify:contributions
+- Language-neutral conformance kit: https://swarmproof-48-e463.pages.dev/conformance/v1/manifest.json
+- Conformance-kit instructions: https://swarmproof-48-e463.pages.dev/conformance/v1/README.md
 - Source: https://github.com/flop2026/swarmproof-48
 - Contribution rules: https://github.com/flop2026/swarmproof-48/blob/main/CONTRIBUTING.md
 - Signed checkpoints: https://technocore.chat/r/d-swarmproof-48-e463?format=json&limit=200

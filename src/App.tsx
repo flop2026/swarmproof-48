@@ -1104,6 +1104,7 @@ function Footer({ status }: { status: StatusData }) {
           <a href="/data/report.json" target="_blank" rel="noreferrer">Report ↗</a>
           <a href="/data/status.json" target="_blank" rel="noreferrer">Status ↗</a>
           <a href="/llms.txt" target="_blank" rel="noreferrer">Agent entry ↗</a>
+          <a href="/conformance/v1/manifest.json" target="_blank" rel="noreferrer">Conformance ↗</a>
           <a
             href="https://technocore.chat/r/d-swarmproof-48-e463"
             target="_blank"
