@@ -21,6 +21,11 @@ async function fixture() {
   const root = await mkdtemp(path.join(tmpdir(), "swarmproof-privacy-audit-"));
   await mkdir(path.join(root, "public"), { recursive: true });
   await cp(path.join(PROJECT_ROOT, "public/data"), path.join(root, "public/data"), { recursive: true });
+  await cp(
+    path.join(PROJECT_ROOT, "public/.well-known"),
+    path.join(root, "public/.well-known"),
+    { recursive: true },
+  );
   await writeFile(path.join(root, "safe.txt"), "bounded public fixture\n", "utf8");
   return root;
 }
@@ -156,6 +161,19 @@ test("privacy audit rejects unknown status fields", async t => {
   await assert.rejects(
     () => audit(root),
     error => error.code === 1 && /invalid-public-status-schema/u.test(error.stderr),
+  );
+});
+
+test("privacy audit rejects a mutated public control claim", async t => {
+  const root = await fixture();
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const claimPath = path.join(root, "public/.well-known/swarmproof-control-claim-v1.json");
+  const claim = JSON.parse(await readFile(claimPath, "utf8"));
+  claim.payload.resources[1].uri = "https://example.invalid";
+  await writeFile(claimPath, `${canonicalize(claim)}\n`, "utf8");
+  await assert.rejects(
+    () => audit(root),
+    error => error.code === 1 && /invalid-public-control-claim/u.test(error.stderr),
   );
 });
 

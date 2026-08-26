@@ -20,6 +20,12 @@ address, or existing social account is intentionally published.
   by this project.
 - Private keys, wallet material, email addresses, or account recovery data.
 
+The public control claim contains only the already-public coordinator DID, pseudonymous project
+identifier, exact public repository/origin URIs, canonical UTC validity times, and an Ed25519
+signature. The generator reads the private key from an owner-only regular file, derives the DID,
+zeros the input buffer after parsing, and never prints the PEM or signature. JavaScript and the
+host operating system do not provide a guarantee that all key-object memory is immediately wiped.
+
 Hashes of public short text may be vulnerable to guessing. They are published only where they
 are needed for reproducibility, and this limitation is disclosed in every dataset manifest.
 

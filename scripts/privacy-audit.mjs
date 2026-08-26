@@ -6,6 +6,7 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 import { canonicalize } from "../lib/canonical.mjs";
+import { verifyControlClaim } from "../lib/control-claim.mjs";
 import { verifyEnvelope } from "../lib/protocol.mjs";
 
 const executeFile = promisify(execFile);
@@ -831,6 +832,34 @@ async function validatePublicData(violations, dataDirectory) {
   }
 }
 
+async function validatePublicControlClaim(violations, publicDirectory, expectedBytes = null) {
+  const claimFile = path.join(publicDirectory, ".well-known", "swarmproof-control-claim-v1.json");
+  const agentFile = path.join(publicDirectory, ".well-known", "agent.json");
+  try {
+    const claimText = await readFile(claimFile, "utf8");
+    const verified = verifyControlClaim(claimText);
+    if (expectedBytes !== null) {
+      assert(claimText === expectedBytes, "Built control claim differs from the source copy.");
+    }
+    const agent = JSON.parse(await readFile(agentFile, "utf8"));
+    assert(agent?.provider?.did === verified.document.payload.controller, "agent.json DID does not match the control claim.");
+    assert(
+      agent?.documentation?.control_claim
+        === "https://swarmproof-48-e463.pages.dev/.well-known/swarmproof-control-claim-v1.json",
+      "agent.json control-claim endpoint is invalid.",
+    );
+    assert(
+      agent?.public_data?.control_claim_schema
+        === "https://swarmproof-48-e463.pages.dev/schema/swarmproof-control-claim-v1.schema.json",
+      "agent.json control-claim schema endpoint is invalid.",
+    );
+    return claimText;
+  } catch (error) {
+    recordSchemaViolation(violations, claimFile, "invalid-public-control-claim", error);
+    return null;
+  }
+}
+
 async function validateGitHistory(violations) {
   let stdout;
   try {
@@ -874,7 +903,11 @@ async function main() {
   }
   await scanLocalDenylist(files, deniedValues, violations);
   await validatePublicData(violations, path.join(ROOT, "public/data"));
-  if (INCLUDE_DIST) await validatePublicData(violations, path.join(ROOT, "dist/data"));
+  const sourceControlClaim = await validatePublicControlClaim(violations, path.join(ROOT, "public"));
+  if (INCLUDE_DIST) {
+    await validatePublicData(violations, path.join(ROOT, "dist/data"));
+    await validatePublicControlClaim(violations, path.join(ROOT, "dist"), sourceControlClaim);
+  }
   if (process.env.SWARMPROOF_CHECK_HISTORY === "1") await validateGitHistory(violations);
 
   if (violations.length > 0) {

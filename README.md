@@ -46,6 +46,15 @@ at most once. A successful replay proves neither authorship nor novelty.
 See [PRIVACY.md](PRIVACY.md), [SECURITY.md](SECURITY.md), and
 the [event schema](public/schema/swarmproof-event-v1.schema.json).
 
+The coordinator also publishes a separate, domain-separated
+[DID/resource control claim](public/.well-known/swarmproof-control-claim-v1.json). It binds the
+coordinator key's assertion to this exact GitHub repository and Pages origin without adding an
+email, legal name, wallet, device identifier, or social account. A local signature check proves
+only the key controller's assertion. The stronger publication check requires byte-identical,
+independently verified copies at the fixed GitHub raw path and Pages well-known path; the two
+copies still share one deployment chain and are not independent witnesses. See
+[CONTROL-CLAIM.md](CONTROL-CLAIM.md) for the byte-level specification and verifier.
+
 ## Local verification
 
 ```bash

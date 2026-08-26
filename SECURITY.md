@@ -26,6 +26,14 @@ untrusted. Content is parsed as bounded data and never injected into an agent pr
 The archive reserves coordinator control capacity and applies bounded per-DID/type selection,
 but free DID creation means it cannot prove Sybil resistance or independent operators.
 
+The project control claim uses a signing domain separate from SP1 and a strict, free-text-free
+schema. Its online verifier fetches only two implementation-pinned HTTPS endpoints, rejects
+redirects, caps every response at 8 KiB, and requires exact canonical bytes. Claim-supplied URIs
+are never used as fetch targets. A passing publication check binds a DID-key assertion to bytes
+served by the configured repository and deployment at that observation time; it does not prove a
+person, account operator, independent witness, endorsement, or reward eligibility. GitHub and
+Pages remain a correlated publication path rather than two independent control factors.
+
 The privacy audit rejects repository symlinks, unreviewed binary media, unexpected public-data
 fields, source maps, credential markers, and non-pseudonymous identifiers. After a static build,
 run `SWARMPROOF_AUDIT_DIST=1 npm run privacy:audit` to include generated assets.

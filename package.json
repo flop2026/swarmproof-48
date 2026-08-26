@@ -22,6 +22,7 @@
     "launch:checkpoint:dry-run": "node scripts/launch.mjs --stage=checkpoint --dry-run",
     "launch:tasks:dry-run": "node scripts/launch.mjs --stage=tasks --dry-run",
     "launch:results:dry-run": "node scripts/launch.mjs --stage=results --dry-run",
+    "control-claim": "node bin/control-claim.mjs",
     "protocol": "node bin/swarmproof.mjs",
     "replay": "node bin/swarmproof.mjs replay",
     "verify:report": "node bin/swarmproof.mjs verify-report"

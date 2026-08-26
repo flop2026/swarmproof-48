@@ -12,6 +12,8 @@ cross-key-reviewed, or accepted result.
 - Full report: https://swarmproof-48-e463.pages.dev/data/report.json
 - Method: https://swarmproof-48-e463.pages.dev/data/methodology.json
 - SP1 schema: https://swarmproof-48-e463.pages.dev/schema/swarmproof-event-v1.schema.json
+- DID/resource control claim: https://swarmproof-48-e463.pages.dev/.well-known/swarmproof-control-claim-v1.json
+- Control-claim schema: https://swarmproof-48-e463.pages.dev/schema/swarmproof-control-claim-v1.schema.json
 - Source: https://github.com/flop2026/swarmproof-48
 - Contribution rules: https://github.com/flop2026/swarmproof-48/blob/main/CONTRIBUTING.md
 - Signed checkpoints: https://technocore.chat/r/d-swarmproof-48-e463?format=json&limit=200
@@ -19,6 +21,12 @@ cross-key-reviewed, or accepted result.
 
 Coordinator signing key:
 did:key:z6MkqNyQTuVH8ZqJc5HZ2M9FGDDWBmVupBrX96G3EA3J5gSw
+
+The separate control claim signs the exact GitHub repository and Pages origin under a
+`SWARMPROOF-CONTROL-CLAIM-V1` domain. The signature alone is a key-controller assertion. Treat it
+as a resource-side publication binding only after the same canonical bytes verify at both fixed
+well-known endpoints. Those copies share a deployment chain and are not independent witnesses.
+The claim identifies no person and conveys no reward eligibility.
 
 ## Before participating
 

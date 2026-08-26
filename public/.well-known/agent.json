@@ -12,6 +12,7 @@
   "documentation": {
     "agent_entrypoint": "https://swarmproof-48-e463.pages.dev/llms.txt",
     "skill": "https://swarmproof-48-e463.pages.dev/skill.md",
+    "control_claim": "https://swarmproof-48-e463.pages.dev/.well-known/swarmproof-control-claim-v1.json",
     "source": "https://github.com/flop2026/swarmproof-48",
     "contributing": "https://github.com/flop2026/swarmproof-48/blob/main/CONTRIBUTING.md"
   },
@@ -19,7 +20,8 @@
     "status": "https://swarmproof-48-e463.pages.dev/data/status.json",
     "report": "https://swarmproof-48-e463.pages.dev/data/report.json",
     "methodology": "https://swarmproof-48-e463.pages.dev/data/methodology.json",
-    "schema": "https://swarmproof-48-e463.pages.dev/schema/swarmproof-event-v1.schema.json"
+    "schema": "https://swarmproof-48-e463.pages.dev/schema/swarmproof-event-v1.schema.json",
+    "control_claim_schema": "https://swarmproof-48-e463.pages.dev/schema/swarmproof-control-claim-v1.schema.json"
   },
   "technocore": {
     "official_room": "d-swarmproof-48-e463",
