@@ -15,6 +15,18 @@ async function jsonLines(path) {
     .map(JSON.parse);
 }
 
+function publishedArtifactChecks(report) {
+  assert.ok(Array.isArray(report.events), "Published report events are missing.");
+  const checks = {};
+  for (const event of report.events) {
+    if (event?.artifact_check === null || event?.artifact_check === undefined) continue;
+    assert.equal(typeof event.event_id, "string", "Published artifact check has no event id.");
+    assert.equal(checks[event.event_id], undefined, "Published artifact check event ids are not unique.");
+    checks[event.event_id] = event.artifact_check;
+  }
+  return checks;
+}
+
 test("offline replay reproduces the published audit-core hash", async () => {
   const [config, taskManifest, records, proposals, report, status] = await Promise.all([
     json("config/event.json"),
@@ -31,22 +43,24 @@ test("offline replay reproduces the published audit-core hash", async () => {
     allowedTasks,
     coordinatorDid: config.coordinator_did,
   };
-  const artifacts = await verifyArtifactEvidence(records, {
-    repository: config.repository,
-    repositoryRoot: process.cwd(),
-    trustedRef: "HEAD",
-    protocolOptions,
-    tasksById: new Map(taskManifest.tasks.map(task => [task.id, task])),
-    startsAt: config.starts_at,
-    endsAt: config.ends_at,
-  });
+  const artifactChecks = process.env.SWARMPROOF_OFFLINE_REPLAY === "1"
+    ? publishedArtifactChecks(report)
+    : (await verifyArtifactEvidence(records, {
+      repository: config.repository,
+      repositoryRoot: process.cwd(),
+      trustedRef: "HEAD",
+      protocolOptions,
+      tasksById: new Map(taskManifest.tasks.map(task => [task.id, task])),
+      startsAt: config.starts_at,
+      endsAt: config.ends_at,
+    })).checks;
   const replayed = auditEvents(records, {
     allowedRepositories: [...allowedRepositories],
     allowedTasks,
     coordinatorDid: config.coordinator_did,
     startsAt: config.starts_at,
     endsAt: config.ends_at,
-    artifactChecks: artifacts.checks,
+    artifactChecks,
     additionalObserved: proposals.length,
   });
   assert.equal(replayed.report_sha256, report.audit_core_sha256);

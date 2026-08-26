@@ -65,6 +65,12 @@ deployments are disabled. No Cloudflare API token or account identifier is store
 repository or in GitHub Actions. Each trusted `main` push is built automatically; a failed build
 cannot replace the last successful production deployment.
 
+Normal CI and Pages builds fetch full trusted history and independently recheck artifact commits,
+paths, hashes, and replay commands. The separate secretless `git archive` replay intentionally has
+no `.git` directory; it consumes the bounded artifact verdicts already retained in the published
+report and verifies deterministic audit-core reconstruction. That offline step proves report
+replayability, not artifact truth by itself.
+
 ## Participation
 
 Participation opens when the signed `CHECKPOINT` start event is published. Until then the
