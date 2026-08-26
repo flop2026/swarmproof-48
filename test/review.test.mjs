@@ -307,6 +307,37 @@ test("read-back rejects a REVIEW outside the event window or before its target",
   }), null);
 });
 
+test("read-back uses collector-exact transport timestamps and verified event IDs", async () => {
+  const context = await boundContext();
+  const key = privatePem();
+  const prepared = prepareSignedReview({
+    context,
+    roomData: emptyRoom(),
+    privateKeyPem: key,
+    now: new Date(context.report.generated_at),
+  });
+  const microseconds = prepared.created.payload.claimed_at.replace(/Z$/u, "000Z");
+  const observed = findValidObservedReview({
+    context,
+    roomData: roomWithEvents([prepared.created], { sourceTimes: [microseconds] }),
+    eventId: prepared.created.event_id,
+    observedAt: new Date(context.report.generated_at),
+  });
+  assert.equal(observed?.event_id, prepared.created.event_id);
+  assert.equal(observed?.source_ts, prepared.created.payload.claimed_at);
+
+  for (const sourceTime of [
+    prepared.created.payload.claimed_at.replace(/Z$/u, ""),
+    "2026-02-30T00:00:00.000000Z",
+    "2026-08-26T08:30:00.123456+24:00",
+  ]) assert.equal(findValidObservedReview({
+    context,
+    roomData: roomWithEvents([prepared.created], { sourceTimes: [sourceTime] }),
+    eventId: prepared.created.event_id,
+    observedAt: new Date(context.report.generated_at),
+  }), null, sourceTime);
+});
+
 test("chooses a bounded monotonic transport-safe nonce", async () => {
   const context = await boundContext("FAIL");
   const key = privatePem();
