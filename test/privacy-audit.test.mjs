@@ -1,15 +1,21 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
+import { createHash } from "node:crypto";
 import { cp, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
+import { canonicalize } from "../lib/canonical.mjs";
 
 const executeFile = promisify(execFile);
 const PROJECT_ROOT = fileURLToPath(new URL("../", import.meta.url));
 const AUDIT_SCRIPT = path.join(PROJECT_ROOT, "scripts/privacy-audit.mjs");
+
+function sha256Hex(value) {
+  return createHash("sha256").update(value).digest("hex");
+}
 
 async function fixture() {
   const root = await mkdtemp(path.join(tmpdir(), "swarmproof-privacy-audit-"));
@@ -31,9 +37,91 @@ async function audit(root, includeDist = false, checkHistory = false) {
   });
 }
 
+async function updateReport(root, mutate) {
+  const reportPath = path.join(root, "public/data/report.json");
+  const statusPath = path.join(root, "public/data/status.json");
+  const report = JSON.parse(await readFile(reportPath, "utf8"));
+  const status = JSON.parse(await readFile(statusPath, "utf8"));
+  mutate(report);
+  report.snapshot_manifest.network_sample_sha256 = report.network_sample === null
+    ? null
+    : sha256Hex(canonicalize(report.network_sample));
+  report.snapshot_manifest_sha256 = sha256Hex(canonicalize(report.snapshot_manifest));
+  status.snapshot_manifest_sha256 = report.snapshot_manifest_sha256;
+  status.report_sha256 = sha256Hex(canonicalize(report));
+  await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
+  await writeFile(statusPath, `${JSON.stringify(status, null, 2)}\n`, "utf8");
+}
+
+function promoteNetworkSampleToV2(sample) {
+  const aggregate = sample.aggregate;
+  sample.schema = "swarmproof-network-sample-v2";
+  aggregate.exact_clustered_messages = aggregate.messages
+    - aggregate.exact_unique_messages
+    + aggregate.exact_duplicate_clusters;
+  aggregate.exact_clustered_message_share = aggregate.messages === 0
+    ? null
+    : aggregate.exact_clustered_messages / aggregate.messages;
+  aggregate.normalized_clustered_messages = aggregate.messages
+    - aggregate.normalized_unique_messages
+    + aggregate.normalized_duplicate_clusters;
+  aggregate.normalized_clustered_message_share = aggregate.messages === 0
+    ? null
+    : aggregate.normalized_clustered_messages / aggregate.messages;
+  aggregate.minhash_similarity_clustered_messages = aggregate.messages === 0
+    ? 0
+    : Math.round(aggregate.minhash_similarity_message_share * aggregate.messages);
+  aggregate.minhash_similarity_clustered_message_share = aggregate.messages === 0
+    ? null
+    : aggregate.minhash_similarity_clustered_messages / aggregate.messages;
+  aggregate.minhash_similarity_message_share = aggregate.minhash_similarity_clustered_message_share;
+}
+
 test("privacy audit accepts the current exact public-data schemas", async t => {
   const root = await fixture();
   t.after(() => rm(root, { recursive: true, force: true }));
+  const result = await audit(root);
+  assert.match(result.stdout, /privacy audit passed/u);
+});
+
+test("privacy audit accepts the complete v2 network-sample shape", async t => {
+  const root = await fixture();
+  t.after(() => rm(root, { recursive: true, force: true }));
+  await updateReport(root, report => promoteNetworkSampleToV2(report.network_sample));
+  const result = await audit(root);
+  assert.match(result.stdout, /privacy audit passed/u);
+});
+
+test("privacy audit rejects mixed or incomplete network-sample schema shapes", async t => {
+  const mixedRoot = await fixture();
+  const incompleteRoot = await fixture();
+  t.after(() => Promise.all([
+    rm(mixedRoot, { recursive: true, force: true }),
+    rm(incompleteRoot, { recursive: true, force: true }),
+  ]));
+
+  await updateReport(mixedRoot, report => {
+    report.network_sample.aggregate.exact_clustered_messages = 1;
+  });
+  await assert.rejects(
+    () => audit(mixedRoot),
+    error => error.code === 1 && /invalid-public-report-schema/u.test(error.stderr),
+  );
+
+  await updateReport(incompleteRoot, report => {
+    promoteNetworkSampleToV2(report.network_sample);
+    delete report.network_sample.aggregate.normalized_clustered_message_share;
+  });
+  await assert.rejects(
+    () => audit(incompleteRoot),
+    error => error.code === 1 && /invalid-public-report-schema/u.test(error.stderr),
+  );
+});
+
+test("privacy audit ignores the root git worktree pointer", async t => {
+  const root = await fixture();
+  t.after(() => rm(root, { recursive: true, force: true }));
+  await writeFile(path.join(root, ".git"), "gitdir: /var/tmp/repository/.git/worktrees/fixture\n", "utf8");
   const result = await audit(root);
   assert.match(result.stdout, /privacy audit passed/u);
 });

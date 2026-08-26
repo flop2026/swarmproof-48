@@ -8,8 +8,9 @@ address, or existing social account is intentionally published.
 
 - Strict `SP1` envelopes containing structured identifiers, hashes, signatures, and timestamps,
   plus the canonical server-reported source timestamp needed to reject pre-start placement.
-- Hashes and deterministic similarity sketches derived from bounded public samples.
-- Aggregate counts, missingness, and source-window metadata.
+- Hashes and deterministic similarity sketches derived transiently from bounded public samples.
+- Aggregate counts, same-denominator clustered-message coverage, missingness, and source-window
+  metadata. The public workflow discards individual message hashes and sketches.
 
 ## Data not retained
 

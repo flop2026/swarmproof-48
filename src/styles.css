@@ -990,6 +990,100 @@ button {
   font-size: 29px;
 }
 
+.copyprint-ladder {
+  padding: 19px 0 16px;
+  border-top: 1px solid var(--line);
+}
+
+.copyprint-heading,
+.copyprint-rung > div:first-child {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.copyprint-heading {
+  margin-bottom: 15px;
+  color: var(--dim);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+}
+
+.copyprint-heading small {
+  color: var(--muted);
+  font-size: 7px;
+  letter-spacing: 0.07em;
+  text-align: right;
+}
+
+.copyprint-rung {
+  position: relative;
+  padding: 7px 0;
+}
+
+.copyprint-rung span,
+.copyprint-rung strong,
+.copyprint-rung p,
+.copyprint-note {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.copyprint-rung span {
+  color: var(--ink);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.copyprint-rung strong {
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+.copyprint-rung p {
+  margin: 2px 0 6px;
+  color: var(--dim);
+  font-size: 8px;
+}
+
+.copyprint-track {
+  height: 4px;
+  overflow: hidden;
+  background: rgba(145, 162, 164, 0.12);
+  border-radius: 999px;
+}
+
+.copyprint-track i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.copyprint-exact .copyprint-track i { background: var(--cyan); }
+.copyprint-normalized .copyprint-track i { background: var(--acid); }
+.copyprint-minhash .copyprint-track i { background: var(--coral); }
+.copyprint-exact strong { color: var(--cyan); }
+.copyprint-normalized strong { color: var(--acid); }
+.copyprint-minhash strong { color: var(--coral); }
+
+.copyprint-rung > b {
+  position: absolute;
+  right: 0;
+  bottom: -7px;
+  color: var(--dim);
+  font-size: 9px;
+  font-weight: 400;
+}
+
+.copyprint-note {
+  margin: 9px 0 0;
+  color: var(--muted);
+  font-size: 7px;
+  letter-spacing: 0.05em;
+  line-height: 1.45;
+}
+
 .scope-note {
   display: flex;
   align-items: flex-start;

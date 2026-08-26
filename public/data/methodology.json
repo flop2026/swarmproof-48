@@ -11,6 +11,7 @@
     "retained_fields": [
       "bounded selection metadata",
       "aggregate counts",
+      "same-denominator exact, normalized, and MinHash clustered-message counts and shares",
       "top hashed exact and normalized clusters",
       "top MinHash similarity cluster digests"
     ],
@@ -19,6 +20,13 @@
       "individual message hashes and MinHash sketches in the public workflow"
     ],
     "similarity": "Eight LSH bands of four MinHash values generate bounded candidates; only sketch similarity at or above 0.75 joins a cluster.",
+    "coverage_ladder": {
+      "denominator": "Every rung divides clustered messages by all retained messages in the same bounded sample.",
+      "exact": "Messages in an exact-hash cluster containing at least two messages.",
+      "normalized": "Messages in a formatting-normalized hash cluster containing at least two messages.",
+      "minhash": "Messages in a connected MinHash cluster whose qualifying edges meet the 0.75 threshold.",
+      "compatibility": "The v2 sample keeps exact_duplicate_share, normalized_duplicate_share, and minhash_similarity_message_share for v1 consumers. Duplicate-share fields measure excess-copy redundancy, while the ladder measures cluster coverage. Strict validators accept either the complete v1 shape or the complete v2 shape during migration; mixed shapes fail closed."
+    },
     "interpretation": "The aggregate is a bounded observation. It cannot be independently recomputed because transient per-message inputs are not published."
   },
   "artifact_replay": {

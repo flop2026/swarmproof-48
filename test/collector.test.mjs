@@ -51,13 +51,48 @@ test("aggregate metrics are bounded and neutral", () => {
   const aggregate = aggregateMessageRecords(records);
   assert.equal(aggregate.messages, 3);
   assert.equal(aggregate.exact_unique_messages, 2);
+  assert.equal(aggregate.exact_clustered_messages, 2);
+  assert.equal(aggregate.exact_clustered_message_share, 2 / 3);
+  assert.equal(aggregate.exact_duplicate_share, 1 - 2 / 3);
   assert.equal(aggregate.exact_duplicate_clusters, 1);
+  assert.equal(aggregate.normalized_clustered_messages, 2);
+  assert.equal(aggregate.normalized_clustered_message_share, 2 / 3);
   assert.equal(aggregate.normalized_duplicate_clusters, 1);
   assert.equal(aggregate.minhash_similarity_clusters, 1);
+  assert.equal(aggregate.minhash_similarity_clustered_messages, 2);
+  assert.equal(aggregate.minhash_similarity_clustered_message_share, 2 / 3);
+  assert.equal(aggregate.minhash_similarity_message_share, 2 / 3);
   assert.equal(aggregate.minhash_similarity_threshold, 0.75);
   assert.equal(aggregate.minhash_candidate_generation_truncated, false);
   assert.equal(aggregate.exact_messages_repeated_across_rooms, 1);
   assert.ok(aggregate.exact_duplicate_share > 0);
+});
+
+test("separates excess-copy redundancy from same-denominator cluster coverage", () => {
+  const records = ["repeat", "repeat", "repeat", "singleton"].map((text, index) => (
+    deriveMessageRecord(`room${index}`, {
+      seq: index,
+      ts: "2026-08-26T00:00:00Z",
+      from: `actor-${index}`,
+      text,
+    })
+  ));
+  const aggregate = aggregateMessageRecords(records);
+  assert.equal(aggregate.exact_duplicate_share, 0.5);
+  assert.equal(aggregate.exact_clustered_messages, 3);
+  assert.equal(aggregate.exact_clustered_message_share, 0.75);
+  assert.ok(aggregate.exact_clustered_message_share <= aggregate.normalized_clustered_message_share);
+  assert.ok(aggregate.normalized_clustered_message_share <= aggregate.minhash_similarity_clustered_message_share);
+});
+
+test("publishes null shares and zero clustered counts for an empty sample", () => {
+  const aggregate = aggregateMessageRecords([]);
+  assert.equal(aggregate.exact_clustered_messages, 0);
+  assert.equal(aggregate.exact_clustered_message_share, null);
+  assert.equal(aggregate.normalized_clustered_messages, 0);
+  assert.equal(aggregate.normalized_clustered_message_share, null);
+  assert.equal(aggregate.minhash_similarity_clustered_messages, 0);
+  assert.equal(aggregate.minhash_similarity_clustered_message_share, null);
 });
 
 test("duplicate cluster totals are uncapped while detail lists stay bounded", () => {
@@ -256,6 +291,7 @@ test("isolates malformed messages without failing the room snapshot", async () =
     attempts: 1,
     fetchImpl,
   });
+  assert.equal(sample.schema, "swarmproof-network-sample-v2");
   assert.equal(sample.aggregate.messages, 2);
   assert.equal(sample.selection.message_entries_rejected, 2);
   assert.equal(sample.selection.rooms_failed, 0);

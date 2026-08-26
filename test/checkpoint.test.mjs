@@ -104,6 +104,23 @@ test("accepts a fresh, published, full-size active snapshot", () => {
   assert.match(assessed.meaningful_sha256, /^[0-9a-f]{64}$/);
 });
 
+test("accepts v1 and v2 network samples during migration and rejects unknown versions", () => {
+  for (const schema of ["swarmproof-network-sample-v1", "swarmproof-network-sample-v2"]) {
+    const input = fixture();
+    input.report.network_sample.schema = schema;
+    input.status.report_sha256 = sha256Hex(canonicalize(input.report));
+    assert.equal(assessCheckpointInputs({ ...input, now: NOW }).eligible, true, schema);
+  }
+
+  const unsupported = fixture();
+  unsupported.report.network_sample.schema = "swarmproof-network-sample-v3";
+  unsupported.status.report_sha256 = sha256Hex(canonicalize(unsupported.report));
+  assert.throws(
+    () => assessCheckpointInputs({ ...unsupported, now: NOW }),
+    /Unsupported network sample schema/u,
+  );
+});
+
 test("accepts only a published source commit that is the trusted-main merge base", () => {
   const sourceCommit = "c".repeat(40);
   const mainCommit = "d".repeat(40);

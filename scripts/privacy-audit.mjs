@@ -95,6 +95,16 @@ function assertRatio(value, label) {
   assert(value === null || (Number.isFinite(value) && value >= 0 && value <= 1), `${label} must be null or a ratio.`);
 }
 
+function assertDerivedRatio(value, numerator, denominator, label) {
+  assertRatio(value, label);
+  if (denominator === 0) {
+    assert(value === null, `${label} must be null when the sample is empty.`);
+    return;
+  }
+  assert(value !== null, `${label} must be present when the sample is non-empty.`);
+  assert(Math.abs(value - numerator / denominator) <= 1e-12, `${label} is inconsistent with its count.`);
+}
+
 function assertHash(value, label) {
   assert(typeof value === "string" && HASH_RE.test(value), `${label} must be a lowercase SHA-256.`);
 }
@@ -129,6 +139,7 @@ async function walk(directory, violations) {
   const files = [];
   for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name))) {
     const absolute = path.join(directory, entry.name);
+    if (directory === ROOT && entry.name === ".git") continue;
     if (entry.isSymbolicLink()) {
       recordViolation(violations, absolute, "symbolic-link-forbidden");
       continue;
@@ -337,7 +348,11 @@ function validateClusterList(value, label, hashLength) {
 
 function validateNetworkSample(sample, label) {
   assertExactObject(sample, ["schema", "generated_at", "selection", "aggregate", "failures", "limitations"], [], label);
-  assert(sample.schema === "swarmproof-network-sample-v1", `${label}.schema is invalid.`);
+  assert(
+    sample.schema === "swarmproof-network-sample-v1"
+    || sample.schema === "swarmproof-network-sample-v2",
+    `${label}.schema is invalid.`,
+  );
   assertCanonicalTime(sample.generated_at, `${label}.generated_at`);
   const selectionKeys = [
     "endpoint",
@@ -364,7 +379,7 @@ function validateNetworkSample(sample, label) {
   assert(sample.selection.messages_per_room_requested >= 1 && sample.selection.messages_per_room_requested <= 200, `${label}.selection.messages_per_room_requested is out of bounds.`);
   assert(sample.selection.rooms_failed <= sample.selection.rooms_returned, `${label}.selection.rooms_failed is inconsistent.`);
 
-  const aggregateKeys = [
+  const aggregateV1Keys = [
     "messages", "did_shaped_senders", "did_shaped_message_share", "exact_unique_messages", "exact_duplicate_share",
     "exact_duplicate_clusters", "normalized_unique_messages", "normalized_duplicate_share",
     "normalized_duplicate_clusters", "minhash_similarity_threshold", "minhash_lsh_bands",
@@ -373,6 +388,15 @@ function validateNetworkSample(sample, label) {
     "exact_messages_repeated_across_rooms", "top_exact_clusters", "top_normalized_clusters",
     "top_minhash_similarity_clusters",
   ];
+  const aggregateV2Keys = [
+    ...aggregateV1Keys,
+    "exact_clustered_messages", "exact_clustered_message_share",
+    "normalized_clustered_messages", "normalized_clustered_message_share",
+    "minhash_similarity_clustered_messages", "minhash_similarity_clustered_message_share",
+  ];
+  const aggregateKeys = sample.schema === "swarmproof-network-sample-v2"
+    ? aggregateV2Keys
+    : aggregateV1Keys;
   assertExactObject(sample.aggregate, aggregateKeys, [], `${label}.aggregate`);
   for (const key of [
     "messages", "did_shaped_senders", "exact_unique_messages", "exact_duplicate_clusters",
@@ -392,6 +416,52 @@ function validateNetworkSample(sample, label) {
   assert(sample.aggregate.did_shaped_senders <= sample.aggregate.messages, `${label}.aggregate.did_shaped_senders is inconsistent.`);
   assert(sample.aggregate.exact_unique_messages <= sample.aggregate.messages, `${label}.aggregate.exact_unique_messages is inconsistent.`);
   assert(sample.aggregate.normalized_unique_messages <= sample.aggregate.messages, `${label}.aggregate.normalized_unique_messages is inconsistent.`);
+  assert(sample.aggregate.normalized_unique_messages <= sample.aggregate.exact_unique_messages, `${label}.aggregate normalized uniqueness is inconsistent.`);
+  assert(sample.aggregate.exact_messages_repeated_across_rooms <= sample.aggregate.exact_unique_messages, `${label}.aggregate cross-room count is inconsistent.`);
+  assertDerivedRatio(
+    sample.aggregate.exact_duplicate_share,
+    sample.aggregate.messages - sample.aggregate.exact_unique_messages,
+    sample.aggregate.messages,
+    `${label}.aggregate.exact_duplicate_share`,
+  );
+  assertDerivedRatio(
+    sample.aggregate.normalized_duplicate_share,
+    sample.aggregate.messages - sample.aggregate.normalized_unique_messages,
+    sample.aggregate.messages,
+    `${label}.aggregate.normalized_duplicate_share`,
+  );
+
+  if (sample.schema === "swarmproof-network-sample-v2") {
+    for (const key of [
+      "exact_clustered_messages",
+      "normalized_clustered_messages",
+      "minhash_similarity_clustered_messages",
+    ]) assertCounter(sample.aggregate[key], `${label}.aggregate.${key}`);
+    for (const key of [
+      "exact_clustered_message_share",
+      "normalized_clustered_message_share",
+      "minhash_similarity_clustered_message_share",
+    ]) assertRatio(sample.aggregate[key], `${label}.aggregate.${key}`);
+
+    const exactClusteredExpected = sample.aggregate.messages
+      - sample.aggregate.exact_unique_messages
+      + sample.aggregate.exact_duplicate_clusters;
+    const normalizedClusteredExpected = sample.aggregate.messages
+      - sample.aggregate.normalized_unique_messages
+      + sample.aggregate.normalized_duplicate_clusters;
+    assert(sample.aggregate.exact_clustered_messages === exactClusteredExpected, `${label}.aggregate exact clustered count is inconsistent.`);
+    assert(sample.aggregate.normalized_clustered_messages === normalizedClusteredExpected, `${label}.aggregate normalized clustered count is inconsistent.`);
+    assert(sample.aggregate.exact_clustered_messages <= sample.aggregate.normalized_clustered_messages, `${label}.aggregate exact/normalized coverage is inconsistent.`);
+    assert(sample.aggregate.normalized_clustered_messages <= sample.aggregate.minhash_similarity_clustered_messages, `${label}.aggregate normalized/MinHash coverage is inconsistent.`);
+    assert(sample.aggregate.minhash_similarity_clustered_messages <= sample.aggregate.messages, `${label}.aggregate MinHash clustered count is inconsistent.`);
+    assert(sample.aggregate.exact_duplicate_clusters * 2 <= sample.aggregate.exact_clustered_messages, `${label}.aggregate exact cluster count is inconsistent.`);
+    assert(sample.aggregate.normalized_duplicate_clusters * 2 <= sample.aggregate.normalized_clustered_messages, `${label}.aggregate normalized cluster count is inconsistent.`);
+    assert(sample.aggregate.minhash_similarity_clusters * 2 <= sample.aggregate.minhash_similarity_clustered_messages, `${label}.aggregate MinHash cluster count is inconsistent.`);
+    assertDerivedRatio(sample.aggregate.exact_clustered_message_share, sample.aggregate.exact_clustered_messages, sample.aggregate.messages, `${label}.aggregate.exact_clustered_message_share`);
+    assertDerivedRatio(sample.aggregate.normalized_clustered_message_share, sample.aggregate.normalized_clustered_messages, sample.aggregate.messages, `${label}.aggregate.normalized_clustered_message_share`);
+    assertDerivedRatio(sample.aggregate.minhash_similarity_clustered_message_share, sample.aggregate.minhash_similarity_clustered_messages, sample.aggregate.messages, `${label}.aggregate.minhash_similarity_clustered_message_share`);
+    assert(sample.aggregate.minhash_similarity_message_share === sample.aggregate.minhash_similarity_clustered_message_share, `${label}.aggregate legacy MinHash share is inconsistent.`);
+  }
   validateClusterList(sample.aggregate.top_exact_clusters, `${label}.aggregate.top_exact_clusters`, 64);
   validateClusterList(sample.aggregate.top_normalized_clusters, `${label}.aggregate.top_normalized_clusters`, 64);
   validateClusterList(sample.aggregate.top_minhash_similarity_clusters, `${label}.aggregate.top_minhash_similarity_clusters`, 64);

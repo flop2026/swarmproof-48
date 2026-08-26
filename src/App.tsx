@@ -351,23 +351,31 @@ function countdownParts(status: StatusData, now: number) {
 }
 
 function networkNumber(sample: Record<string, unknown> | null | undefined, keys: string[]) {
-  if (!sample) return 0;
+  return networkOptionalNumber(sample, keys) ?? 0;
+}
+
+function networkOptionalNumber(sample: Record<string, unknown> | null | undefined, keys: string[]) {
+  if (!sample) return null;
   for (const key of keys) {
     const value = sample[key];
     if (typeof value === "number" && Number.isFinite(value)) return safeCount(value);
   }
-  return 0;
+  return null;
 }
 
 function networkRatio(sample: Record<string, unknown> | null | undefined, keys: string[]) {
-  if (!sample) return 0;
+  return networkOptionalRatio(sample, keys) ?? 0;
+}
+
+function networkOptionalRatio(sample: Record<string, unknown> | null | undefined, keys: string[]) {
+  if (!sample) return null;
   for (const key of keys) {
     const value = sample[key];
     if (typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1) {
       return value;
     }
   }
-  return 0;
+  return null;
 }
 
 function formatPercent(value: number): string {
@@ -717,6 +725,30 @@ function NetworkMap({ sample }: { sample: Record<string, unknown> | null | undef
     networkNumber(aggregate, ["minhash_similarity_clusters"]),
     networkArrayLength(aggregate, ["top_minhash_similarity_clusters"]),
   );
+  const normalizedClusters = Math.max(
+    networkNumber(aggregate, ["normalized_duplicate_clusters"]),
+    networkArrayLength(aggregate, ["top_normalized_clusters"]),
+  );
+  const exactUniqueMessages = networkNumber(aggregate, ["exact_unique_messages"]);
+  const normalizedUniqueMessages = networkNumber(aggregate, ["normalized_unique_messages"]);
+  const minhashLegacyShare = networkRatio(aggregate, ["minhash_similarity_message_share"]);
+  const exactClusteredMessages = networkOptionalNumber(aggregate, ["exact_clustered_messages"])
+    ?? Math.max(0, messages - exactUniqueMessages + exactClusters);
+  const normalizedClusteredMessages = networkOptionalNumber(aggregate, ["normalized_clustered_messages"])
+    ?? Math.max(0, messages - normalizedUniqueMessages + normalizedClusters);
+  const minhashClusteredMessages = networkOptionalNumber(aggregate, ["minhash_similarity_clustered_messages"])
+    ?? Math.round(minhashLegacyShare * messages);
+  const exactCoverageShare = networkOptionalRatio(aggregate, ["exact_clustered_message_share"])
+    ?? (messages === 0 ? 0 : exactClusteredMessages / messages);
+  const normalizedCoverageShare = networkOptionalRatio(aggregate, ["normalized_clustered_message_share"])
+    ?? (messages === 0 ? 0 : normalizedClusteredMessages / messages);
+  const minhashCoverageShare = networkOptionalRatio(aggregate, ["minhash_similarity_clustered_message_share"])
+    ?? minhashLegacyShare;
+  const copyprintCoverage = [
+    { key: "exact", label: "Exact", count: exactClusteredMessages, share: exactCoverageShare },
+    { key: "normalized", label: "Normalized", count: normalizedClusteredMessages, share: normalizedCoverageShare },
+    { key: "minhash", label: "MinHash ≥75%", count: minhashClusteredMessages, share: minhashCoverageShare },
+  ];
   const didShapedSenders = networkNumber(aggregate, ["did_shaped_senders"]);
   const hasSample = sample !== null && sample !== undefined;
 
@@ -810,6 +842,26 @@ function NetworkMap({ sample }: { sample: Record<string, unknown> | null | undef
             <div className="network-stat">
               <strong>{formatCount(messages)}</strong>
               <span>Messages hashed</span>
+            </div>
+            <div className="copyprint-ladder" aria-label="Copyprint coverage ladder using all sampled messages as the denominator">
+              <div className="copyprint-heading">
+                <span>COPYPRINT COVERAGE</span>
+                <small>SAME DENOMINATOR · {formatCount(messages)} MESSAGES</small>
+              </div>
+              {copyprintCoverage.map(({ key, label, count, share }, index) => (
+                <div className={`copyprint-rung copyprint-${key}`} key={key}>
+                  <div>
+                    <span>{label}</span>
+                    <strong>{formatPercent(share)}</strong>
+                  </div>
+                  <p>{formatCount(count)} / {formatCount(messages)} clustered messages</p>
+                  <div className="copyprint-track" aria-hidden="true">
+                    <i style={{ width: `${String(Math.min(100, Math.max(0, share * 100)))}%` }} />
+                  </div>
+                  {index < copyprintCoverage.length - 1 ? <b aria-hidden="true">↓</b> : null}
+                </div>
+              ))}
+              <p className="copyprint-note">Exact → formatting-normalized → bounded MinHash similarity</p>
             </div>
             <div className="network-stat split-stat">
               <div><strong>{formatCount(exactClusters)}</strong><span>Exact clusters</span></div>
@@ -905,26 +957,29 @@ function ShareCard({ status, report }: { status: StatusData; report: ReportData 
   const rooms = networkNumber(selection, ["rooms_returned", "rooms_sampled", "rooms", "room_count"]);
   const messages = networkNumber(aggregate, ["messages", "messages_sampled", "message_count"]);
   const didShapedSenders = networkNumber(aggregate, ["did_shaped_senders"]);
-  const exactDuplicateShare = networkRatio(aggregate, ["exact_duplicate_share"]);
-  const minhashSimilarityShare = networkRatio(aggregate, ["minhash_similarity_message_share"]);
+  const exactRedundancyShare = networkRatio(aggregate, ["exact_duplicate_share"]);
+  const minhashCoverageShare = networkRatio(aggregate, [
+    "minhash_similarity_clustered_message_share",
+    "minhash_similarity_message_share",
+  ]);
   const summary = useMemo(
     () => [
       "SwarmProof 48 — Can a swarm improve the instrument that audits it?",
       messages > 0
-        ? `Bounded baseline: ${formatCount(messages)} messages across ${formatCount(rooms)} rooms · ${formatCount(didShapedSenders)} DID-shaped senders · ${formatPercent(exactDuplicateShare)} exact-duplicate share · ${formatPercent(minhashSimilarityShare)} in MinHash ≥75% clusters.`
+        ? `Bounded baseline: ${formatCount(messages)} messages across ${formatCount(rooms)} rooms · ${formatCount(didShapedSenders)} DID-shaped senders · ${formatPercent(exactRedundancyShare)} exact redundancy (excess-copy share) · ${formatPercent(minhashCoverageShare)} MinHash ≥75% cluster coverage.`
         : "Bounded baseline sample pending.",
       `${formatCount(status.signing_keys)} signing keys · ${formatCount(status.reproducible_artifacts)} reproducible results · ${formatCount(status.cross_key_reviews)} cross-key-reviewed results · ${formatCount(status.accepted_results)} accepted results.`,
       `Report: ${shortHash(status.report_sha256)} · Generated: ${formatUtc(status.generated_at)}`,
       "Bounded sample, not a population estimate. A DID proves control of a key—not an independent identity.",
     ].join("\n"),
-    [didShapedSenders, exactDuplicateShare, messages, minhashSimilarityShare, rooms, status],
+    [didShapedSenders, exactRedundancyShare, messages, minhashCoverageShare, rooms, status],
   );
 
   const cardMetrics = [
     ["MESSAGES HASHED", formatCount(messages), 32],
     ["DID-SHAPED SENDERS", formatCount(didShapedSenders), 208],
-    ["EXACT DUPLICATE SHARE", formatPercent(exactDuplicateShare), 384],
-    ["MINHASH-SIMILAR SHARE", formatPercent(minhashSimilarityShare), 560],
+    ["EXACT REDUNDANCY", formatPercent(exactRedundancyShare), 384],
+    ["MINHASH COVERAGE", formatPercent(minhashCoverageShare), 560],
   ] as const;
 
   const share = useCallback(async () => {
