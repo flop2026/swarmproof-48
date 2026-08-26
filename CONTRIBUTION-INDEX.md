@@ -59,7 +59,8 @@ Each evidence object has a discriminating `kind` and an exact field set:
 - `cross-key-review` points to a semantically valid REVIEW and matching RESULT in the same replayed
   snapshot. The reviewer must use a different DID key, and only the latest valid verdict for that
   reviewer-key/RESULT pair is effective; a superseded PASS is rejected. Independence remains
-  `unknown`.
+  `unknown`. [`REVIEW-FLOW.md`](REVIEW-FLOW.md) keeps inspection and signing offline from keyless
+  posting, but a posted REVIEW is not indexable until a trusted snapshot archives and replays it.
 - `upstream-acceptance` identifies exact bytes at a full commit and pull request in a different
   GitHub repository. Until a source-specific verifier checks it, it remains a controller-asserted
   reference. Even a verified merge proves accepted bytes, not DID authorship.

@@ -29,7 +29,8 @@
     "verify:contributions": "node bin/contribution-index.mjs verify --project --publications",
     "protocol": "node bin/swarmproof.mjs",
     "replay": "node bin/swarmproof.mjs replay",
-    "review": "node bin/swarmproof.mjs review",
+    "review": "node bin/review-flow.mjs",
+    "review:legacy": "node bin/swarmproof.mjs review",
     "verify:report": "node bin/swarmproof.mjs verify-report"
   },
   "dependencies": {

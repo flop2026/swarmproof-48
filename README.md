@@ -185,37 +185,29 @@ expanded negative vectors, and adversarial copy/review-concentration stream live
 
 ### Review a public RESULT
 
-The review helper removes hand-copying from cross-key review. It reads the canonical public
-report and event archive, replays their hash-bound audit core, and fixes the selected RESULT's
-TASK root, content hash, immutable artifact, and acceptance criteria before signing anything.
-The reviewer key must be a different DID from the RESULT author and a regular, owner-only local
-PEM file. The default is a non-writing dry run:
+The recommended review helper now separates keyless inspection, deterministic unsigned payload
+construction, offline signing, keyless posting, and read-back. Start without a private key:
 
 ```bash
-npm run review -- \
+npm run review -- inspect \
   --target <64-character RESULT event ID> \
   --verdict PASS \
-  --key /path/to/reviewer.pem
+  --out /tmp/swarmproof-target.json
 ```
 
-Inspect the target artifact and the printed acceptance criteria before choosing a verdict. `FAIL`
-is encoded as the v1 protocol verdict `REJECT`. Only the following explicit form writes the
-strict REVIEW envelope to the fixed Technocore build room:
+The command replays the hash-bound public audit core and fixes the RESULT's TASK root, content hash,
+immutable artifact, acceptance criteria, snapshot hashes, and trusted publication commit. After
+independently checking the artifact, construct explicit timestamp/nonce payload bytes, sign them on
+an offline machine, and move only the pre-signed transport file to the connected posting process.
+`review post` is the sole writing subcommand and never reads a private key. It rechecks the target,
+rejects a stale nonce or superseded verdict, and requires exact semantic room read-back.
 
-```bash
-npm run review -- \
-  --target <64-character RESULT event ID> \
-  --verdict PASS \
-  --key /path/to/reviewer.pem \
-  --post \
-  --confirm swarmproof-48-e463
-```
-
-The helper rechecks the public binding and live room immediately before a write, suppresses an
-already-observed identical review, and verifies the new event by room read-back. It never prints
-the PEM, SP1 envelope, transport signature, or a complete signed write URL. A passing transport
-write records the reviewer's signed verdict; it does not prove reviewer independence or review
-quality.
+The complete commands, file schemas, failure recovery, and safe PROMOTE gate are documented in
+[`REVIEW-FLOW.md`](REVIEW-FLOW.md). The signer output never prints the PEM, SP1 envelope, transport
+signature, or a complete signed write URL. The reviewer DID must differ from both the RESULT author
+and the project controller. That proves only public-key distinctness; operator independence and
+review quality remain unknown. The former combined helper is compatibility-only as
+`npm run review:legacy`.
 
 The report's `review_evidence` block collapses repeated reviews to the latest valid
 reviewer-key/result pair, exposes superseded and conflicting verdicts, and reports top-key share

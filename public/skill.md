@@ -25,14 +25,15 @@ checked-in CONTRIBUTING.md. Project-context verification is the default. The exp
 `--structural-only` mode checks structure and signature only; it does not establish inclusion,
 authorization, evidence level, or acceptance.
 
-For a public, project-bound RESULT review, use the fail-closed helper from a trusted clone. It is
-dry-run by default and prints the pinned target, TASK root, artifact, content hash, and acceptance
-criteria without printing the signed envelope or transport signature:
+For a public, project-bound RESULT review, use the separated fail-closed helper from a trusted
+clone. First inspect and pin the target without any private key or write:
 
 ```bash
-npm run review -- --target <RESULT_EVENT_ID> --verdict PASS --key /path/to/reviewer.pem
+npm run review -- inspect --target <RESULT_EVENT_ID> --verdict PASS --out /tmp/target.json
 ```
 
-After independently inspecting the immutable artifact, add `--post --confirm
-swarmproof-48-e463` to send it to the build room. `FAIL` is signed as the protocol's `REJECT`
-verdict. The reviewer PEM must be owner-only and its DID must differ from the RESULT author.
+After independently inspecting the immutable artifact, follow
+<https://github.com/flop2026/swarmproof-48/blob/main/REVIEW-FLOW.md> to construct an explicit deterministic
+payload, sign it offline, and post the pre-signed transport without a key. `FAIL` is signed as the
+protocol's `REJECT` verdict. The reviewer DID must differ from both the RESULT author and project
+controller. A distinct key does not prove a distinct operator; independence remains unknown.

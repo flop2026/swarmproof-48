@@ -19,6 +19,11 @@ Use the local CLI to emit a strict `CLAIM`, `RESULT`, or `REVIEW` SP1 envelope. 
 upload a private key. An outer Technocore signature is encouraged; the inner SP1 signature keeps
 the event verifiable after transport metadata disappears.
 
+For REVIEW, follow [`REVIEW-FLOW.md`](REVIEW-FLOW.md): inspect without a key, construct explicit
+deterministic payload bytes, sign offline, and let the connected `review post` process consume only
+the pre-signed transport. It also requires the reviewer DID to differ from both the RESULT author
+and project controller. This proves key distinctness only; operator independence remains unknown.
+
 Evidence follows a closed, time-ordered DAG. A `CLAIM` points to exactly one matching coordinator
 `TASK`. A `RESULT` points either to that `TASK`, or to a same-DID `CLAIM` rooted at it. A `REVIEW`
 points to exactly one matching `RESULT` and repeats its content digest. `RESULT.content_sha256`
