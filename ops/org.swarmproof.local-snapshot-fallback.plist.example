@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>org.swarmproof.local-snapshot-fallback</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>__NODE_BINARY__</string>
+    <string>__REPOSITORY_ROOT__/scripts/local-snapshot-fallback.mjs</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>__REPOSITORY_ROOT__</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin</string>
+    <key>SWARMPROOF_RETAIN_SKETCHES</key>
+    <string>0</string>
+    <key>TZ</key>
+    <string>UTC</string>
+  </dict>
+
+  <key>StartInterval</key>
+  <integer>600</integer>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>ProcessType</key>
+  <string>Background</string>
+
+  <key>Umask</key>
+  <integer>63</integer>
+
+  <key>StandardOutPath</key>
+  <string>__STATE_DIRECTORY__/stdout.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>__STATE_DIRECTORY__/stderr.log</string>
+</dict>
+</plist>
