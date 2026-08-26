@@ -1,13 +1,13 @@
 {
   "schema": "swarmproof-report-v1",
-  "source_event_count": 11,
+  "source_event_count": 16,
   "unattributable_observation_count": 0,
-  "source_digest": "26a6b719e6a689a05ca5e200459b707ea99f0f16da988dc521297b6deb358915",
+  "source_digest": "020cc10f048150e5be09ad5bc4250207df369e391c3945f960d5d21e67d1f70a",
   "signing_keys": 1,
   "evidence": {
-    "observed": 11,
-    "attributable": 11,
-    "reproducible": 3,
+    "observed": 16,
+    "attributable": 16,
+    "reproducible": 8,
     "cross_key_reviewed": 0,
     "accepted": 0
   },
@@ -52,6 +52,43 @@
       "evidence_level": "ATTRIBUTABLE"
     },
     {
+      "event_id": "46fd4e13da6344911d38bc1b82f1dec5bf13293414c3f223c0b65e5fe37894c9",
+      "type": "RESULT",
+      "task_id": "protocol",
+      "did": "did:key:z6MkqNyQTuVH8ZqJc5HZ2M9FGDDWBmVupBrX96G3EA3J5gSw",
+      "claimed_at": "2026-08-26T11:24:22.045Z",
+      "observed_at": "2026-08-26T11:25:00.723Z",
+      "source_ts": "2026-08-26T11:24:22.868Z",
+      "parent_event_ids": [
+        "afa61da2e05c1083591cc22bb604e0cdb99d4fce3b8ce7d97a788659935286df"
+      ],
+      "content_sha256": "8e1393207b6da33bd8b8a08a837a1ef04938677e71eef42a2610442aa77fe327",
+      "artifact": {
+        "commit": "98d061ff267054973e7d881b3c7891bef1359cfc",
+        "path": "lib/protocol.mjs",
+        "repository": "flop2026/swarmproof-48",
+        "sha256": "8e1393207b6da33bd8b8a08a837a1ef04938677e71eef42a2610442aa77fe327"
+      },
+      "artifact_check": {
+        "status": "pass",
+        "integrity": {
+          "status": "pass",
+          "sha256": "8e1393207b6da33bd8b8a08a837a1ef04938677e71eef42a2610442aa77fe327",
+          "bytes": 11150
+        },
+        "replay": {
+          "status": "pass",
+          "check": "node --test",
+          "commit": "98d061ff267054973e7d881b3c7891bef1359cfc",
+          "isolation": "fresh-git-archive-secretless-process"
+        }
+      },
+      "review": null,
+      "cross_key_reviewers": [],
+      "independence": "unknown",
+      "evidence_level": "REPRODUCIBLE"
+    },
+    {
       "event_id": "565a1a128b0968dcb606c974c00ab7b1f497aa7b08773cc4eaf105b446ce114b",
       "type": "TASK",
       "task_id": "methodology",
@@ -69,6 +106,43 @@
       "evidence_level": "ATTRIBUTABLE"
     },
     {
+      "event_id": "5886ee6368b67a3a2110b285769bbc6d2dc597b4167cfd6a6e008de0d347ff9b",
+      "type": "RESULT",
+      "task_id": "adversarial-fixtures",
+      "did": "did:key:z6MkqNyQTuVH8ZqJc5HZ2M9FGDDWBmVupBrX96G3EA3J5gSw",
+      "claimed_at": "2026-08-26T11:24:22.045Z",
+      "observed_at": "2026-08-26T11:25:00.723Z",
+      "source_ts": "2026-08-26T11:24:24.176Z",
+      "parent_event_ids": [
+        "1db7d15e99fc3f4def53970fb479f0f9d7dfe5242de3ce1750e5d4bada055577"
+      ],
+      "content_sha256": "e0ac2200d4e3cf5cf3b5871dc21b5a5f2f1bfecc36b52498ea7a4f3960ae6c97",
+      "artifact": {
+        "commit": "98d061ff267054973e7d881b3c7891bef1359cfc",
+        "path": "test/sp1-gold-vectors.test.mjs",
+        "repository": "flop2026/swarmproof-48",
+        "sha256": "e0ac2200d4e3cf5cf3b5871dc21b5a5f2f1bfecc36b52498ea7a4f3960ae6c97"
+      },
+      "artifact_check": {
+        "status": "pass",
+        "integrity": {
+          "status": "pass",
+          "sha256": "e0ac2200d4e3cf5cf3b5871dc21b5a5f2f1bfecc36b52498ea7a4f3960ae6c97",
+          "bytes": 15894
+        },
+        "replay": {
+          "status": "pass",
+          "check": "node --test",
+          "commit": "98d061ff267054973e7d881b3c7891bef1359cfc",
+          "isolation": "fresh-git-archive-secretless-process"
+        }
+      },
+      "review": null,
+      "cross_key_reviewers": [],
+      "independence": "unknown",
+      "evidence_level": "REPRODUCIBLE"
+    },
+    {
       "event_id": "6dac0defdceaa49b4f4777f1368bb3bd5df0ea681cd4531fb4a6bc59295df53e",
       "type": "TASK",
       "task_id": "observatory",
@@ -84,6 +158,43 @@
       "cross_key_reviewers": [],
       "independence": "unknown",
       "evidence_level": "ATTRIBUTABLE"
+    },
+    {
+      "event_id": "73164d990f60594bd147f423e801ef37a06198e4f891124110507bef6d6874d9",
+      "type": "RESULT",
+      "task_id": "audit-engine",
+      "did": "did:key:z6MkqNyQTuVH8ZqJc5HZ2M9FGDDWBmVupBrX96G3EA3J5gSw",
+      "claimed_at": "2026-08-26T11:24:22.045Z",
+      "observed_at": "2026-08-26T11:25:00.723Z",
+      "source_ts": "2026-08-26T11:24:23.740Z",
+      "parent_event_ids": [
+        "8e9a0f1e73a4a8a7a496ecce60a89d58ee11736f5cb78edf6aefa5a0e8e0f9f1"
+      ],
+      "content_sha256": "2588cebd1ddf38844fa670c06789194a66846c8be577f8dcb75fbef10a441f11",
+      "artifact": {
+        "commit": "98d061ff267054973e7d881b3c7891bef1359cfc",
+        "path": "lib/audit.mjs",
+        "repository": "flop2026/swarmproof-48",
+        "sha256": "2588cebd1ddf38844fa670c06789194a66846c8be577f8dcb75fbef10a441f11"
+      },
+      "artifact_check": {
+        "status": "pass",
+        "integrity": {
+          "status": "pass",
+          "sha256": "2588cebd1ddf38844fa670c06789194a66846c8be577f8dcb75fbef10a441f11",
+          "bytes": 9634
+        },
+        "replay": {
+          "status": "pass",
+          "check": "node --test",
+          "commit": "98d061ff267054973e7d881b3c7891bef1359cfc",
+          "isolation": "fresh-git-archive-secretless-process"
+        }
+      },
+      "review": null,
+      "cross_key_reviewers": [],
+      "independence": "unknown",
+      "evidence_level": "REPRODUCIBLE"
     },
     {
       "event_id": "879629de98431feaa84b72ea1f75208c23bee1241b6b7f39dc512275fb9420ae",
@@ -208,6 +319,80 @@
       "evidence_level": "ATTRIBUTABLE"
     },
     {
+      "event_id": "c545b9a5ec40decc082b869e229ee703424b694c49af14f57d8d4c07e564c3eb",
+      "type": "RESULT",
+      "task_id": "verifier",
+      "did": "did:key:z6MkqNyQTuVH8ZqJc5HZ2M9FGDDWBmVupBrX96G3EA3J5gSw",
+      "claimed_at": "2026-08-26T11:24:22.045Z",
+      "observed_at": "2026-08-26T11:25:00.723Z",
+      "source_ts": "2026-08-26T11:24:23.276Z",
+      "parent_event_ids": [
+        "a7d0805f4d537703162c5b45d4db63d7b8f5691a5a3cf5245426be492af7122f"
+      ],
+      "content_sha256": "9fc73859fa980cceb7dd9e3ce530d0b8a046f729a47a4a6f3ce459300a8c15b1",
+      "artifact": {
+        "commit": "98d061ff267054973e7d881b3c7891bef1359cfc",
+        "path": "lib/artifact.mjs",
+        "repository": "flop2026/swarmproof-48",
+        "sha256": "9fc73859fa980cceb7dd9e3ce530d0b8a046f729a47a4a6f3ce459300a8c15b1"
+      },
+      "artifact_check": {
+        "status": "pass",
+        "integrity": {
+          "status": "pass",
+          "sha256": "9fc73859fa980cceb7dd9e3ce530d0b8a046f729a47a4a6f3ce459300a8c15b1",
+          "bytes": 8263
+        },
+        "replay": {
+          "status": "pass",
+          "check": "node --test",
+          "commit": "98d061ff267054973e7d881b3c7891bef1359cfc",
+          "isolation": "fresh-git-archive-secretless-process"
+        }
+      },
+      "review": null,
+      "cross_key_reviewers": [],
+      "independence": "unknown",
+      "evidence_level": "REPRODUCIBLE"
+    },
+    {
+      "event_id": "c5dce93ebdaaff4027fc78551b2397d7757bd6e895e1a72d918c69b86e570eaf",
+      "type": "RESULT",
+      "task_id": "replay",
+      "did": "did:key:z6MkqNyQTuVH8ZqJc5HZ2M9FGDDWBmVupBrX96G3EA3J5gSw",
+      "claimed_at": "2026-08-26T11:24:22.045Z",
+      "observed_at": "2026-08-26T11:25:00.723Z",
+      "source_ts": "2026-08-26T11:24:24.592Z",
+      "parent_event_ids": [
+        "879629de98431feaa84b72ea1f75208c23bee1241b6b7f39dc512275fb9420ae"
+      ],
+      "content_sha256": "6d5abbca97a42040d5547dc37a329e5f2f6006a4192946247221e759b0617f56",
+      "artifact": {
+        "commit": "98d061ff267054973e7d881b3c7891bef1359cfc",
+        "path": "bin/swarmproof.mjs",
+        "repository": "flop2026/swarmproof-48",
+        "sha256": "6d5abbca97a42040d5547dc37a329e5f2f6006a4192946247221e759b0617f56"
+      },
+      "artifact_check": {
+        "status": "pass",
+        "integrity": {
+          "status": "pass",
+          "sha256": "6d5abbca97a42040d5547dc37a329e5f2f6006a4192946247221e759b0617f56",
+          "bytes": 33735
+        },
+        "replay": {
+          "status": "pass",
+          "check": "node --test",
+          "commit": "98d061ff267054973e7d881b3c7891bef1359cfc",
+          "isolation": "fresh-git-archive-secretless-process"
+        }
+      },
+      "review": null,
+      "cross_key_reviewers": [],
+      "independence": "unknown",
+      "evidence_level": "REPRODUCIBLE"
+    },
+    {
       "event_id": "cb146310c0cd4b1b1f189328593b3e06a9bd4b2270e1c239dadf2fee5eae0d23",
       "type": "RESULT",
       "task_id": "collector",
@@ -303,17 +488,17 @@
     "Technocore source timestamps and sequence numbers are server-reported transport metadata and are not covered by the inner SP1 signature.",
     "Fixed replay checks run from an exact trusted-main archive in a secretless bounded process; operating-system network isolation is not asserted."
   ],
-  "audit_core_sha256": "30f21feec524b22727c9b2bd4c1eb981bc1eed8950cfc783ea3aa0cbed00aeb3",
-  "generated_at": "2026-08-26T11:20:03.386Z",
+  "audit_core_sha256": "63adb4914b1e4418015631ffffedb309769e3d06057bc1489ec7c29cfb55a6af",
+  "generated_at": "2026-08-26T11:25:00.723Z",
   "event_state": "active",
   "unsigned_proposals_observed": 0,
   "build_room": {
     "room": "swarmproof-48-e463",
-    "messages_observed_in_tail": 13,
+    "messages_observed_in_tail": 18,
     "collection_error": null,
-    "response_count": 13,
+    "response_count": 18,
     "first_seq": 1,
-    "last_seq": 13,
+    "last_seq": 18,
     "sequence_metadata_valid": true,
     "message_entries_truncated": 0,
     "message_entries_uninspected": 0,
@@ -323,12 +508,12 @@
     "continuity_reason": "overlap-or-contiguous"
   },
   "artifact_verification": {
-    "candidates": 3,
-    "attempted": 3,
+    "candidates": 8,
+    "attempted": 8,
     "maximum_per_snapshot": 64,
     "trusted_ref": "HEAD",
     "maximum_artifact_bytes": 4194304,
-    "eligible_result_events": 3,
+    "eligible_result_events": 8,
     "duplicate_results_ignored": 0,
     "coordinator_slots_reserved": 8,
     "participant_results_per_did_maximum": 2,
@@ -346,14 +531,14 @@
   },
   "snapshot_manifest": {
     "schema": "swarmproof-snapshot-manifest-v1",
-    "generated_at": "2026-08-26T11:20:03.386Z",
-    "source_commit": "98d061ff267054973e7d881b3c7891bef1359cfc",
-    "audit_core_sha256": "30f21feec524b22727c9b2bd4c1eb981bc1eed8950cfc783ea3aa0cbed00aeb3",
+    "generated_at": "2026-08-26T11:25:00.723Z",
+    "source_commit": "ba390bed513862400f470046532df2999a5b8e02",
+    "audit_core_sha256": "63adb4914b1e4418015631ffffedb309769e3d06057bc1489ec7c29cfb55a6af",
     "network_sample_sha256": "aded31435434edc05a8d8099046b9954af8ed19b6d16fcf9a1e58f05122aae16",
-    "events_archive_sha256": "68fc0d0385e4382be1c68e04d88e116e9a9fbe4bc60e74f0c944d60dcbe8e56a",
+    "events_archive_sha256": "24e9a31dc4f6deae7fa6001d29a19d80d4843d4cec7e8dab5cdefc4efb918d56",
     "proposals_archive_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   },
-  "snapshot_manifest_sha256": "cffb312b351a8242bcc8387cdc284c4f8d5142a60746e31758750e30377cb0a5",
+  "snapshot_manifest_sha256": "229e3d97c5e8931c779f65cd9603cf0dd4ab39d4b97eb9faddd23b5da0633105",
   "network_sample": {
     "schema": "swarmproof-network-sample-v2",
     "generated_at": "2026-08-26T11:21:08.731Z",
