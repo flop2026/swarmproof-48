@@ -8,11 +8,13 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import test from "node:test";
 import { verifyUtf8 } from "../lib/crypto.mjs";
+import { createEnvelope } from "../lib/protocol.mjs";
 import {
   assertReviewSnapshotTrusted,
   assertReviewSourceCommitTrusted,
   fetchPublicReviewDocuments,
   fetchReviewRoom,
+  findValidObservedReview,
   normalizeReviewDecision,
   postSignedReview,
   prepareSignedReview,
@@ -65,18 +67,30 @@ function emptyRoom() {
 }
 
 function roomWithEvent(created) {
+  return roomWithEvents([created]);
+}
+
+function roomWithEvents(events, { firstSeq = 20, sourceTimes = [] } = {}) {
   return {
     room: "swarmproof-48-e463",
-    count: 1,
-    first_seq: 20,
-    last_seq: 20,
-    messages: [{
-      seq: 20,
-      ts: "2026-08-26T11:27:01.000000Z",
+    count: events.length,
+    first_seq: events.length === 0 ? null : firstSeq,
+    last_seq: events.length === 0 ? 0 : firstSeq + events.length - 1,
+    messages: events.map((created, index) => ({
+      seq: firstSeq + index,
+      ts: sourceTimes[index] ?? created.payload.claimed_at,
       from: created.payload.did,
       nonce: Number(created.payload.nonce),
       text: created.envelope,
-    }],
+    })),
+  };
+}
+
+function contextProtocolOptions(context) {
+  return {
+    allowedRepositories: new Set([context.config.repository]),
+    allowedTasks: new Set(context.manifest.tasks.map(task => task.id)),
+    coordinatorDid: context.config.coordinator_did,
   };
 }
 
@@ -205,6 +219,92 @@ test("refuses a self-review and suppresses an identical observed review", async 
   });
   assert.equal(duplicate.created, null);
   assert.equal(duplicate.duplicate.event_id, first.created.event_id);
+});
+
+test("does not suppress against a structurally valid REVIEW with the wrong content hash", async () => {
+  const context = await boundContext();
+  const key = privatePem();
+  const now = new Date(context.report.generated_at);
+  const valid = prepareSignedReview({ context, roomData: emptyRoom(), privateKeyPem: key, now });
+  const invalid = createEnvelope({
+    ...valid.created.payload,
+    content_sha256: "0".repeat(64),
+  }, key, contextProtocolOptions(context));
+  const prepared = prepareSignedReview({
+    context,
+    roomData: roomWithEvent(invalid),
+    privateKeyPem: key,
+    now: new Date(now.getTime() + 1_000),
+  });
+  assert(prepared.created);
+  assert.equal(prepared.duplicate, null);
+  assert.notEqual(prepared.created.event_id, invalid.event_id);
+});
+
+test("a newer valid REJECT supersedes an older PASS for duplicate suppression", async () => {
+  const passContext = await boundContext("PASS");
+  const rejectContext = await boundContext("FAIL");
+  const key = privatePem();
+  const firstTime = new Date(passContext.report.generated_at);
+  const pass = prepareSignedReview({
+    context: passContext,
+    roomData: emptyRoom(),
+    privateKeyPem: key,
+    now: firstTime,
+  });
+  const reject = prepareSignedReview({
+    context: rejectContext,
+    roomData: roomWithEvent(pass.created),
+    privateKeyPem: key,
+    now: new Date(firstTime.getTime() + 1_000),
+  });
+  assert(reject.created);
+  assert.equal(reject.created.payload.review.verdict, "REJECT");
+  const requestedPass = prepareSignedReview({
+    context: passContext,
+    roomData: roomWithEvents([pass.created, reject.created]),
+    privateKeyPem: key,
+    now: new Date(firstTime.getTime() + 2_000),
+  });
+  assert(requestedPass.created);
+  assert.equal(requestedPass.duplicate, null);
+  assert.equal(requestedPass.created.payload.review.verdict, "PASS");
+});
+
+test("read-back rejects a REVIEW outside the event window or before its target", async () => {
+  const context = await boundContext();
+  const key = privatePem();
+  const prepared = prepareSignedReview({
+    context,
+    roomData: emptyRoom(),
+    privateKeyPem: key,
+    now: new Date(context.report.generated_at),
+  });
+  const wrongContent = createEnvelope({
+    ...prepared.created.payload,
+    content_sha256: "0".repeat(64),
+  }, key, contextProtocolOptions(context));
+  assert.equal(findValidObservedReview({
+    context,
+    roomData: roomWithEvent(wrongContent),
+    eventId: wrongContent.event_id,
+    observedAt: new Date(context.report.generated_at),
+  }), null);
+  const afterWindow = new Date(Date.parse(context.config.ends_at) + 1_000).toISOString();
+  assert.equal(findValidObservedReview({
+    context,
+    roomData: roomWithEvents([prepared.created], { sourceTimes: [afterWindow] }),
+    eventId: prepared.created.event_id,
+    observedAt: afterWindow,
+  }), null);
+  assert.equal(findValidObservedReview({
+    context,
+    roomData: roomWithEvents([prepared.created], {
+      sourceTimes: [new Date(Date.parse(context.target.source_ts) - 1_000).toISOString()],
+    }),
+    eventId: prepared.created.event_id,
+    observedAt: new Date(context.report.generated_at),
+  }), null);
 });
 
 test("chooses a bounded monotonic transport-safe nonce", async () => {
