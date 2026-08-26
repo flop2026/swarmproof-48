@@ -94,6 +94,19 @@ changes are eligible after a 20-hour minimum interval; a 21-hour silence target 
 while the local signer is available. The private key and complete signed envelope are never
 printed or placed in GitHub or Cloudflare.
 
+A separate, secretless GitHub Actions monitor runs every six hours. It reads only fixed,
+allowlisted public endpoints and fails closed unless the same-origin Pages status is within its
+declared freshness bound, the DID profile has the expected pseudonymous identity and lifecycle
+state, the coordinator still owns the official room, and the verified linear checkpoint chain
+starts at the pinned launch event. Both the profile update and newest signed checkpoint must be
+no more than 26 hours old. This remote check can detect a stopped local maintainer without having
+the signing key, but it cannot repair or refresh anything.
+
+The workflow does not contain an email credential and does not send email itself. GitHub may
+notify the repository owner about a failed scheduled run according to that account's Actions and
+notification settings; scheduled jobs and those notifications can be delayed or suppressed.
+For paging guarantees, monitor the public workflow result with an independent alerting service.
+
 The scheduled snapshot workflow closes an elapsed 48-hour window fail-closed, takes a final full
 network sample, commits the `complete` evidence snapshot, and waits until the exact status identity
 is visible on Cloudflare Pages. After completion, the bounded daily snapshot cadence continues.
