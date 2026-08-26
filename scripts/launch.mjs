@@ -20,6 +20,7 @@ import {
   coordinatorPreStartConflicts,
   indexExpectedTaskEvents,
   publicLaunchSummary,
+  resolveLaunchResultWork,
   selectRecoverableBaseline,
   verifyLaunchEvents,
 } from "../lib/launch.mjs";
@@ -424,19 +425,6 @@ function firstNonce(roomData, did, count, now = new Date()) {
   return String(first);
 }
 
-function resultMatches(event, { config, taskId, artifactHash, taskEventId }) {
-  const artifact = event.payload.artifact;
-  return event.payload.type === "RESULT"
-    && event.payload.task_id === taskId
-    && event.payload.parent_event_ids.length === 1
-    && event.payload.parent_event_ids[0] === taskEventId
-    && event.payload.content_sha256 === artifactHash
-    && artifact?.repository === config.repository
-    && COMMIT_RE.test(artifact.commit ?? "")
-    && artifact.path === LAUNCH_ARTIFACTS[taskId]
-    && artifact.sha256 === artifactHash;
-}
-
 async function verifyResolvedResultHistory(results, launchState, currentCommit, config) {
   for (const [taskId, event] of Object.entries(results)) {
     const resultCommit = event.payload.artifact.commit;
@@ -463,23 +451,6 @@ async function verifyResolvedResultHistory(results, launchState, currentCommit, 
     });
     assert(sha256Hex(body) === event.payload.artifact.sha256, `Existing RESULT artifact hash failed for ${taskId}.`);
   }
-}
-
-function resolveResultEvents(events, inputs, taskIds = LAUNCH_TASK_IDS) {
-  const resolved = {};
-  for (const taskId of taskIds) {
-    const candidates = events.filter(event => event.payload.type === "RESULT" && event.payload.task_id === taskId);
-    const matching = candidates.filter(event => resultMatches(event, {
-      ...inputs,
-      taskId,
-      artifactHash: inputs.artifactHashes[taskId],
-      taskEventId: inputs.taskEvents[taskId].event_id,
-    }));
-    assert(candidates.length === matching.length, `Build room contains a divergent coordinator RESULT for ${taskId}.`);
-    assert(matching.length <= 1, `Build room contains duplicate coordinator RESULT events for ${taskId}.`);
-    if (matching[0]) resolved[taskId] = matching[0];
-  }
-  return resolved;
 }
 
 function assertAllResolved(events, type) {
@@ -797,13 +768,15 @@ async function preflight({ stage }) {
     } else {
       assertAllResolved(taskEvents, "TASK");
       const evidence = await postStartEvidence(config, launchState, commit, artifactHashes);
-      resultTaskIds = evidence.taskIds;
-      resultEvents = resolveResultEvents(durableEvents, {
+      const resultWork = resolveLaunchResultWork({
+        events: durableEvents,
         config,
-        commit,
-        artifactHashes,
         taskEvents,
-      }, resultTaskIds);
+        eligibleTaskIds: evidence.taskIds,
+        baselineHashes: evidence.baselineHashes,
+      });
+      resultEvents = resultWork.existing;
+      resultTaskIds = resultWork.pendingTaskIds;
       await verifyResolvedResultHistory(resultEvents, launchState, commit, config);
     }
   }
@@ -907,6 +880,13 @@ function selectTaskStage(preflightState, privateKeyPem, now) {
 }
 
 function selectResultStage(preflightState, privateKeyPem, now) {
+  if (preflightState.resultTaskIds.length === 0) {
+    return {
+      created: [],
+      skipped: Object.values(preflightState.resultEvents),
+      room: preflightState.config.build_room,
+    };
+  }
   const taskEventIds = Object.fromEntries(Object.entries(preflightState.taskEvents).map(([id, event]) => [id, event.event_id]));
   const created = createLaunchResultEvents({
     config: preflightState.config,
@@ -925,7 +905,7 @@ function selectResultStage(preflightState, privateKeyPem, now) {
     expectedType: "RESULT",
   });
   return {
-    created: created.filter(event => !preflightState.resultEvents[event.payload.task_id]),
+    created,
     skipped: Object.values(preflightState.resultEvents),
     room: preflightState.config.build_room,
   };

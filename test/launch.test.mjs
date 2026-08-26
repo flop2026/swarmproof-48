@@ -17,6 +17,7 @@ import {
   createLaunchTaskEvents,
   indexExpectedTaskEvents,
   publicLaunchSummary,
+  resolveLaunchResultWork,
   selectRecoverableBaseline,
   validateLaunchManifest,
   verifyLaunchEvents,
@@ -245,6 +246,74 @@ test("RESULT generation fails closed on a missing TASK binding or artifact hash"
     claimedAt: NOW.toISOString(),
     firstNonce: "4000",
   }), /TASK event ID is missing for collector/u);
+});
+
+test("historical RESULTs remain valid while only five unfinished changed tasks stay pending", () => {
+  const input = fixture();
+  const tasks = createLaunchTaskEvents({
+    config: input.config,
+    manifest: input.manifest,
+    privateKeyPem: input.key,
+    claimedAt: NOW.toISOString(),
+    firstNonce: "5000",
+  });
+  const taskEvents = Object.fromEntries(tasks.map(event => [event.payload.task_id, event]));
+  const taskEventIds = Object.fromEntries(tasks.map(event => [event.payload.task_id, event.event_id]));
+  const baselineHashes = Object.fromEntries(LAUNCH_TASK_IDS.map(id => [id, "0".repeat(64)]));
+  const historicalHashes = Object.fromEntries(LAUNCH_TASK_IDS.map(id => [id, "a".repeat(64)]));
+  const historicalResults = createLaunchResultEvents({
+    config: input.config,
+    manifest: input.manifest,
+    privateKeyPem: input.key,
+    commit: COMMIT,
+    artifactHashes: historicalHashes,
+    taskEventIds,
+    taskIds: ["collector", "methodology", "observatory"],
+    claimedAt: NOW.toISOString(),
+    firstNonce: "6000",
+  });
+
+  const work = resolveLaunchResultWork({
+    events: historicalResults,
+    config: input.config,
+    taskEvents,
+    baselineHashes,
+    eligibleTaskIds: [
+      "protocol",
+      "collector",
+      "verifier",
+      "audit-engine",
+      "adversarial-fixtures",
+      "replay",
+      "methodology",
+    ],
+  });
+  assert.deepEqual(Object.keys(work.existing), ["collector", "observatory", "methodology"]);
+  assert.deepEqual(work.pendingTaskIds, [
+    "protocol",
+    "verifier",
+    "audit-engine",
+    "adversarial-fixtures",
+    "replay",
+  ]);
+
+  const divergent = structuredClone(historicalResults[0]);
+  divergent.payload.parent_event_ids = ["f".repeat(64)];
+  assert.throws(() => resolveLaunchResultWork({
+    events: [divergent],
+    config: input.config,
+    taskEvents,
+    baselineHashes,
+    eligibleTaskIds: ["collector"],
+  }), /divergent coordinator RESULT for collector/u);
+
+  assert.throws(() => resolveLaunchResultWork({
+    events: [historicalResults[0]],
+    config: input.config,
+    taskEvents,
+    baselineHashes: { ...baselineHashes, collector: historicalHashes.collector },
+    eligibleTaskIds: ["collector"],
+  }), /divergent coordinator RESULT for collector/u);
 });
 
 test("prebuilt baseline is ineligible and only materially changed post-start artifacts become RESULTs", () => {

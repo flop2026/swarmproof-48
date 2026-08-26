@@ -36,17 +36,15 @@ jobs:
           git config user.name "SwarmProof Coordinator"
           git config user.email "${{ github.repository_owner_id }}+${{ github.repository_owner }}@users.noreply.github.com"
           git config user.useConfigOnly true
-      - name: Finalize elapsed event window
+      - name: Inspect elapsed event window
         id: lifecycle
         shell: bash
         run: |
-          lifecycle=$(node scripts/finalize.mjs)
-          if [[ "$lifecycle" == *'"action":"finalized"'* ]]; then
-            echo "finalized=1" >> "$GITHUB_OUTPUT"
-            git add config/event.json
-            git commit -m "event: close 48-hour audit window"
+          lifecycle=$(node scripts/finalize.mjs --check)
+          if [[ "$lifecycle" == *'"action":"final_drain_required"'* ]]; then
+            echo "finalize_due=1" >> "$GITHUB_OUTPUT"
           else
-            echo "finalized=0" >> "$GITHUB_OUTPUT"
+            echo "finalize_due=0" >> "$GITHUB_OUTPUT"
           fi
       - name: Select bounded cadence
         id: cadence
@@ -55,7 +53,7 @@ jobs:
           state=$(node -p "JSON.parse(require('fs').readFileSync('config/event.json','utf8')).state")
           run_snapshot=0
           network=0
-          if [ "${{ steps.lifecycle.outputs.finalized }}" = "1" ]; then
+          if [ "${{ steps.lifecycle.outputs.finalize_due }}" = "1" ]; then
             run_snapshot=1
             network=1
           elif [ "$SWARMPROOF_EVENT_NAME" = "workflow_dispatch" ]; then
@@ -85,24 +83,40 @@ jobs:
         if: steps.cadence.outputs.run_snapshot == '1'
         env:
           SWARMPROOF_NETWORK: ${{ steps.cadence.outputs.network }}
-        run: npm run snapshot
+        shell: bash
+        run: |
+          snapshot=$(node scripts/snapshot.mjs)
+          echo "$snapshot"
+          if [ "${{ steps.lifecycle.outputs.finalize_due }}" = "1" ] && [[ "$snapshot" != *'"action":"final_drain"'* ]]; then
+            exit 1
+          fi
       - name: Validate generated output
         if: steps.cadence.outputs.run_snapshot == '1'
         run: npm run validate
+      - name: Finalize drained snapshot transactionally
+        if: steps.lifecycle.outputs.finalize_due == '1'
+        run: node scripts/finalize.mjs
+      - name: Validate finalized output
+        if: steps.lifecycle.outputs.finalize_due == '1'
+        run: npm run validate && npm run verify:report
       - name: Commit and publish snapshot update
         if: steps.cadence.outputs.run_snapshot == '1'
         shell: bash
         run: |
-          changed=$(git status --porcelain -- public/data)
-          if [ -z "$changed" ]; then
-            exit 0
-          fi
-          unexpected=$(git status --porcelain | awk '$2 !~ /^public\/data\// { print $2 }')
+          unexpected=$(git status --porcelain | awk '$2 != "config/event.json" && $2 !~ /^public\/data\// { print $2 }')
           if [ -n "$unexpected" ]; then
             exit 1
           fi
-          git add public/data
-          git commit -m "data: daily evidence snapshot"
+          changed=$(git status --porcelain -- config/event.json public/data)
+          if [ -z "$changed" ]; then
+            exit 0
+          fi
+          git add config/event.json public/data
+          if [ "${{ steps.lifecycle.outputs.finalize_due }}" = "1" ]; then
+            git commit -m "event: freeze final evidence snapshot"
+          else
+            git commit -m "data: daily evidence snapshot"
+          fi
           git push origin HEAD:main
       - name: Verify the exact snapshot reached Cloudflare Pages
         if: steps.cadence.outputs.run_snapshot == '1'

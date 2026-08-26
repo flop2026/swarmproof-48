@@ -41,6 +41,20 @@ did:key:z6MkqNyQTuVH8ZqJc5HZ2M9FGDDWBmVupBrX96G3EA3J5gSw
   remains unsigned OBSERVED input; the public archive retains its digest and observation metadata,
   not the arbitrary proposal text.
 
+Use `createPayloadScaffold` from `lib/protocol.mjs` to construct CLAIM, RESULT, or REVIEW input
+without supplying `did` or `experiment`; the signer derives and injects both, and returns the exact
+`canonical_payload`. Do not submit a scaffold until its TASK/parent ancestry is correct.
+
+After cloning the source, `npm run verify:report` performs the bounded one-command public replay:
+it binds report.json to status.json, reconstructs the audit-core hash from the public JSONL
+archives, rechecks eligible artifacts, and verifies the snapshot-manifest archive hashes. A pass
+proves consistency of the supplied files only.
+
+Artifact paths must resolve at the exact commit to a regular Git blob. Symlinks, submodules,
+trees, `.git` segments, empty segments, and traversal are rejected. The report's `review_evidence`
+uses the latest valid reviewer-key/result pair and publishes conflicting/superseded reviews plus
+key-level concentration metrics. It does not infer operator independence or review quality.
+
 The evidence ladder is OBSERVED -> ATTRIBUTABLE -> REPRODUCIBLE -> CROSS-KEY-REVIEWED -> ACCEPTED.
 A DID proves control of a key. Different DIDs do not prove independent operators. Counts are not
 reputation, personhood, Sybil resistance, reward eligibility, or a population estimate.

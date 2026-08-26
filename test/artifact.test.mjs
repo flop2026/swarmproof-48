@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -18,7 +18,20 @@ async function fixtureRepository() {
   await executeFile("git", ["config", "user.email", "flop2026@users.noreply.github.com"], { cwd: directory });
   const content = Buffer.from("deterministic artifact\n", "utf8");
   await writeFile(path.join(directory, "result.txt"), content);
-  await executeFile("git", ["add", "result.txt"], { cwd: directory });
+  await mkdir(path.join(directory, "nested"));
+  await writeFile(path.join(directory, "nested", "result.txt"), content);
+  await symlink("result.txt", path.join(directory, "result-link"));
+  await mkdir(path.join(directory, "test"));
+  await writeFile(path.join(directory, "test", "replay.test.mjs"), `
+import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import test from "node:test";
+
+test("offline replay provides an isolated Git context", () => {
+  assert.match(execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(), /^[0-9a-f]{40}$/u);
+});
+`, "utf8");
+  await executeFile("git", ["add", "result.txt", "result-link", "nested/result.txt", "test/replay.test.mjs"], { cwd: directory });
   await executeFile("git", ["commit", "-m", "fixture"], {
     cwd: directory,
     env: { ...process.env, TZ: "UTC" },
@@ -46,6 +59,13 @@ test("verifies only immutable, reachable, hash-matching artifacts", async () => 
     allowedRepository: REPOSITORY,
   });
   assert.equal(mismatch.reason, "artifact-hash-mismatch");
+
+  const oversized = await verifyLocalArtifact(artifact, {
+    repositoryRoot: fixture.directory,
+    allowedRepository: REPOSITORY,
+    maximumBytes: fixture.content.byteLength - 1,
+  });
+  assert.equal(oversized.reason, "artifact-oversized");
 });
 
 test("rejects repository changes and path traversal before running git", async () => {
@@ -67,6 +87,33 @@ test("rejects repository changes and path traversal before running git", async (
     }, { allowedRepository: REPOSITORY }),
     /path is invalid/u,
   );
+  for (const unsafePath of ["nested//result.txt", "nested/./result.txt", ".git/config", "nested/"]) {
+    await assert.rejects(
+      () => verifyLocalArtifact({
+        repository: REPOSITORY,
+        commit: "a".repeat(40),
+        path: unsafePath,
+        sha256: "b".repeat(64),
+      }, { allowedRepository: REPOSITORY }),
+      /path is invalid/u,
+    );
+  }
+});
+
+test("rejects symlinks and trees instead of hashing non-regular git objects", async () => {
+  const fixture = await fixtureRepository();
+  for (const artifactPath of ["result-link", "nested"]) {
+    const result = await verifyLocalArtifact({
+      repository: REPOSITORY,
+      commit: fixture.commit,
+      path: artifactPath,
+      sha256: sha256Hex(fixture.content),
+    }, {
+      repositoryRoot: fixture.directory,
+      allowedRepository: REPOSITORY,
+    });
+    assert.deepEqual(result, { status: "fail", reason: "artifact-not-regular-file" });
+  }
 });
 
 test("replays only the fixed test command from an exact trusted commit", async () => {

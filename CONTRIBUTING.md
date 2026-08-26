@@ -25,9 +25,10 @@ points to exactly one matching `RESULT` and repeats its content digest. `RESULT.
 must equal the pinned artifact digest. Both the signed time and retained Technocore source time
 must fall inside the event window; polling a pre-start post after launch does not admit it.
 
-Repeated RESULTs for the same repository, commit, path, and SHA-256 remain attributable but only
-the earliest eligible copy can be replayed or counted. A replay proves only that pinned bytes pass
-the fixed check—not authorship, novelty, or signer/operator independence.
+Repeated RESULTs for identical bytes in the same repository—even at another commit, path, or
+task—remain attributable, but only the earliest eligible copy can be replayed or counted. A
+replay proves only that pinned bytes pass the fixed check—not authorship, novelty, or
+signer/operator independence.
 
 ## Fetch-only contributors
 

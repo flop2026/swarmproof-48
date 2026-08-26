@@ -56,7 +56,7 @@ function protocolOptions(coordinatorDid) {
   };
 }
 
-test("nonce and cross-task copies of one artifact tuple cannot inflate reproducibility or artifact slots", () => {
+test("nonce, path, and cross-task copies of identical artifact bytes cannot inflate evidence", () => {
   const coordinatorKey = privatePem();
   const authorKey = privatePem();
   const coordinatorDid = didFromPrivateKey(coordinatorKey);
@@ -65,7 +65,7 @@ test("nonce and cross-task copies of one artifact tuple cannot inflate reproduci
   const hash = "a".repeat(64);
   const first = createEnvelope(resultPayload("collector", "2026-08-26T00:10:00.000Z", 2, task.event_id, hash, "results/shared.json"), authorKey);
   const duplicate = createEnvelope(resultPayload("collector", "2026-08-26T00:11:00.000Z", 3, task.event_id, hash, "results/shared.json"), authorKey);
-  const crossTaskDuplicate = createEnvelope(resultPayload("protocol", "2026-08-26T00:12:00.000Z", 5, otherTask.event_id, hash, "results/shared.json"), authorKey);
+  const crossTaskDuplicate = createEnvelope(resultPayload("protocol", "2026-08-26T00:12:00.000Z", 5, otherTask.event_id, hash, "results/relocated-copy.json"), authorKey);
   const records = [record(task, 1), record(otherTask, 2), record(first, 3), record(duplicate, 4), record(crossTaskDuplicate, 5)];
 
   const selection = selectArtifactCandidates(records, {
@@ -195,6 +195,46 @@ test("a PROMOTE signed before its cross-key PASS review cannot become retroactiv
   });
   assert.equal(audited.report.evidence.accepted, 0);
   assert.equal(audited.report.evidence.cross_key_reviewed, 1);
+  assert.ok(audited.report.semantically_ignored.some(entry => (
+    entry.event_id === promote.event_id && entry.reason === "promotion-requires-prior-cross-key-pass-review"
+  )));
+});
+
+test("a superseded PASS cannot authorize promotion and a later PASS is not retroactive", () => {
+  const coordinatorKey = privatePem();
+  const authorKey = privatePem();
+  const reviewerKey = privatePem();
+  const coordinatorDid = didFromPrivateKey(coordinatorKey);
+  const task = createEnvelope(payload("TASK", "replay", "2026-08-26T00:00:00.000Z", 160), coordinatorKey, { coordinatorDid });
+  const hash = "8".repeat(64);
+  const result = createEnvelope(resultPayload("replay", "2026-08-26T00:10:00.000Z", 161, task.event_id, hash), authorKey);
+  const reviewPayload = (verdict, nonce, claimedAt) => payload("REVIEW", "replay", claimedAt, nonce, {
+    parent_event_ids: [result.event_id],
+    content_sha256: hash,
+    review: { target_event_id: result.event_id, verdict },
+  });
+  const initialPass = createEnvelope(reviewPayload("PASS", 162, "2026-08-26T00:11:00.000Z"), reviewerKey);
+  const rejection = createEnvelope(reviewPayload("REJECT", 163, "2026-08-26T00:12:00.000Z"), reviewerKey);
+  const promote = createEnvelope(payload("PROMOTE", "replay", "2026-08-26T00:13:00.000Z", 164, {
+    parent_event_ids: [result.event_id],
+    content_sha256: hash,
+  }), coordinatorKey, { coordinatorDid });
+  const laterPass = createEnvelope(reviewPayload("PASS", 165, "2026-08-26T00:14:00.000Z"), reviewerKey);
+  const audited = auditEvents([
+    record(task, 1),
+    record(result, 2),
+    record(initialPass, 3),
+    record(rejection, 4),
+    record(promote, 5),
+    record(laterPass, 6),
+  ], {
+    allowedRepositories: [REPOSITORY],
+    coordinatorDid,
+    startsAt: START,
+    endsAt: END,
+    artifactChecks: { [result.event_id]: { status: "pass" } },
+  });
+  assert.equal(audited.report.evidence.accepted, 0);
   assert.ok(audited.report.semantically_ignored.some(entry => (
     entry.event_id === promote.event_id && entry.reason === "promotion-requires-prior-cross-key-pass-review"
   )));

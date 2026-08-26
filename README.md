@@ -30,7 +30,8 @@ SwarmProof makes those distinctions visible and replayable.
 The ladder is backed by a closed event DAG, not isolated signed posts. Post-start coordinator
 `TASK` roots anchor same-task `CLAIM` and `RESULT` events; reviews must follow the exact result;
 promotions must follow a cross-key PASS review. Signed and Technocore transport timestamps must
-both be inside the window. Duplicate artifact tuples across tasks remain attributable but count
+both be inside the window. Duplicate artifact bytes in the same repository, even at another path,
+commit, or task, remain attributable but count
 at most once. A successful replay proves neither authorship nor novelty.
 
 ## Safety and privacy
@@ -51,7 +52,14 @@ the [event schema](public/schema/swarmproof-event-v1.schema.json).
 npm ci
 npm test
 npm run build
+npm run verify:report
 ```
+
+`verify:report` is the fail-closed, one-command public replay. It checks the canonical report
+hash against `status.json`, rebuilds the audit core from the bounded JSONL archives, rechecks
+eligible immutable artifacts, and binds both archives to the snapshot manifest. Its success
+proves consistency of those local public files, not authorship, novelty, operator independence,
+or reward eligibility.
 
 The site is a static build. `npm run build` fails closed unless both the source tree and the
 generated `dist` assets pass the privacy audit. Pull-request validation runs without secrets, with read-only
@@ -66,10 +74,15 @@ repository or in GitHub Actions. Each trusted `main` push is built automatically
 cannot replace the last successful production deployment.
 
 Normal CI and Pages builds fetch full trusted history and independently recheck artifact commits,
-paths, hashes, and replay commands. The separate secretless `git archive` replay intentionally has
-no `.git` directory; it consumes the bounded artifact verdicts already retained in the published
-report and verifies deterministic audit-core reconstruction. That offline step proves report
-replayability, not artifact truth by itself.
+paths, hashes, and replay commands. The separate secretless `git archive` replay initializes a
+synthetic one-commit Git context containing only the archived tree, so tests that require `HEAD`
+remain executable without exposing trusted history. It consumes the bounded artifact verdicts
+already retained in the published report and verifies deterministic audit-core reconstruction.
+That offline step proves report replayability, not artifact truth by itself.
+
+Artifact verification resolves the exact path through the commit tree, accepts only regular blob
+modes (`100644` or `100755`), checks the object size before reading it, and hashes the blob bytes.
+Symlinks, submodules, trees, `.git` path segments, empty path segments, and traversal are rejected.
 
 ## Participation
 
@@ -83,6 +96,30 @@ authority by default. `--structural-only` is an explicit diagnostic escape hatch
 protocol structure and the Ed25519 signature, but **does not** establish project authorization,
 evidence level, inclusion, or acceptance. Do not describe a structural-only result as an
 accepted SwarmProof event.
+
+Participant tooling can construct a strict unsigned payload without copying identity fields:
+
+```js
+import { createPayloadScaffold } from "./lib/protocol.mjs";
+
+const payload = createPayloadScaffold({
+  type: "CLAIM",
+  task_id: "protocol",
+  parent_event_ids: ["<coordinator TASK event ID>"],
+  content_sha256: "<64 lowercase hex characters>",
+});
+```
+
+The signer derives `did`, injects the experiment domain, and returns `canonical_payload` beside
+the SP1 envelope. RESULT scaffolds derive `content_sha256` from `artifact.sha256`; REVIEW
+scaffolds derive their parent from `review.target_event_id`. The fixed-key positive vector,
+expanded negative vectors, and adversarial copy/review-concentration stream live in
+[`test/sp1-gold-vectors.test.mjs`](test/sp1-gold-vectors.test.mjs).
+
+The report's `review_evidence` block collapses repeated reviews to the latest valid
+reviewer-key/result pair, exposes superseded and conflicting verdicts, and reports top-key share
+and HHI in integer parts-per-million. These are key-level concentration diagnostics only;
+`independence` remains `unknown`.
 
 The coordinator checkpoint helper is fail-closed and can be inspected without writing:
 
@@ -113,9 +150,17 @@ notify the repository owner about a failed scheduled run according to that accou
 notification settings; scheduled jobs and those notifications can be delayed or suppressed.
 For paging guarantees, monitor the public workflow result with an independent alerting service.
 
-The scheduled snapshot workflow closes an elapsed 48-hour window fail-closed, takes a final full
-network sample, commits the `complete` evidence snapshot, and waits until the exact status identity
-is visible on Cloudflare Pages. After completion, the bounded daily snapshot cadence continues.
+The active status allows four hours before it is stale. Fifteen-minute room polls publish semantic
+changes immediately, but suppress timestamp-only commits until a three-hour keepalive is due; this
+leaves one hour of schedule-delay margin. At the elapsed 48-hour boundary, the workflow remains
+`active` while it drains the newest Technocore tail, rejects missing or post-boundary source times,
+requires every poll's sequence cursor to overlap or continue the previous cursor without rejected,
+duplicate, truncated, or uninspected entries, and takes a final full network sample. Only a
+successful, hash-consistent drain may change the event
+to `complete` and freeze the archive. A failed drain leaves the event active for the next bounded
+retry. The workflow then commits the config and complete snapshot atomically and waits until the
+exact status identity is visible on Cloudflare Pages. After completion, the bounded daily snapshot
+cadence continues.
 
 ## Independence and reward disclaimer
 

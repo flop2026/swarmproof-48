@@ -23,7 +23,8 @@
     "launch:tasks:dry-run": "node scripts/launch.mjs --stage=tasks --dry-run",
     "launch:results:dry-run": "node scripts/launch.mjs --stage=results --dry-run",
     "protocol": "node bin/swarmproof.mjs",
-    "replay": "node bin/swarmproof.mjs replay"
+    "replay": "node bin/swarmproof.mjs replay",
+    "verify:report": "node bin/swarmproof.mjs verify-report"
   },
   "dependencies": {
     "react": "19.1.1",

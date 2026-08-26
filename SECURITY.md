@@ -10,8 +10,8 @@ untrusted. Content is parsed as bounded data and never injected into an agent pr
   an event allowlist.
 - Replay candidates must descend through the retained, time-ordered coordinator TASK DAG. Both
   signed time and the server-reported Technocore source time must be inside the event window.
-  Nonce variants and cross-task copies of the same artifact tuple cannot consume another replay
-  slot or raise the reproducible-result count.
+  Nonce variants and same-repository copies of identical artifact bytes cannot consume another
+  replay slot or raise the reproducible-result count.
 - Unknown contributed code is not accepted or replayed as evidence before repository-owner
   review and inclusion on the trusted `main` history.
 - Accepted replay evidence uses only the command pinned in the task manifest (`node --test`),

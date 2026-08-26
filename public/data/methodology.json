@@ -33,7 +33,7 @@
     "integrity": "The artifact path is read from an exact commit reachable from trusted HEAD and must match its declared SHA-256.",
     "fixed_check": "node --test runs from a fresh git archive of that exact commit in a secretless process with time and output caps.",
     "automatic_limit_per_snapshot": 64,
-    "deduplication": "Repository, commit, path, and SHA-256 form one artifact tuple across all tasks; only its earliest semantically eligible RESULT can be replayed or counted.",
+    "deduplication": "Repository and SHA-256 form one byte identity across all paths, commits, and tasks; only its earliest semantically eligible RESULT can be replayed or counted.",
     "selection": "Eight slots are reserved for coordinator launch results. Remaining checks use round-robin DID/task selection, at most two participant results per DID and eight total results per task.",
     "scope": "A successful replay proves that pinned bytes passed the fixed check. It does not prove authorship, novelty, or that the signer created the artifact."
   },

@@ -296,6 +296,66 @@ function validateEvidence(evidence, label) {
   assert(evidence.accepted <= evidence.cross_key_reviewed, `${label} acceptance count is inconsistent.`);
 }
 
+function validateReviewEvidence(evidence, label) {
+  const counterKeys = [
+    "valid_review_events",
+    "effective_reviewer_result_pairs",
+    "superseded_review_events",
+    "conflicting_reviewer_result_pairs",
+    "effective_cross_key_pairs",
+    "effective_cross_key_pass_pairs",
+    "cross_key_pass_pairs_targeting_reproducible_results",
+    "result_targets_with_cross_key_review",
+    "reproducible_result_targets_with_cross_key_pass_review",
+    "result_targets_with_multiple_cross_key_reviewers",
+    "unique_cross_key_reviewer_keys",
+    "top_cross_key_reviewer_share_ppm",
+    "cross_key_reviewer_hhi_ppm",
+  ];
+  assertExactObject(evidence, [
+    "basis",
+    ...counterKeys,
+    "effective_cross_key_verdicts",
+    "independence",
+  ], [], label);
+  assert(evidence.basis === "latest-valid-review-per-reviewer-key-and-result", `${label}.basis is invalid.`);
+  counterKeys.forEach(key => assertCounter(evidence[key], `${label}.${key}`));
+  assertExactObject(evidence.effective_cross_key_verdicts, ["pass", "changes", "reject"], [], `${label}.effective_cross_key_verdicts`);
+  for (const key of ["pass", "changes", "reject"]) {
+    assertCounter(evidence.effective_cross_key_verdicts[key], `${label}.effective_cross_key_verdicts.${key}`);
+  }
+  assert(evidence.independence === "unknown", `${label}.independence must remain unknown.`);
+  assert(
+    evidence.effective_reviewer_result_pairs + evidence.superseded_review_events === evidence.valid_review_events,
+    `${label} effective/superseded accounting is inconsistent.`,
+  );
+  assert(evidence.conflicting_reviewer_result_pairs <= evidence.effective_reviewer_result_pairs, `${label} conflict count is inconsistent.`);
+  assert(evidence.effective_cross_key_pairs <= evidence.effective_reviewer_result_pairs, `${label} cross-key pair count is inconsistent.`);
+  assert(
+    Object.values(evidence.effective_cross_key_verdicts).reduce((sum, count) => sum + count, 0)
+      === evidence.effective_cross_key_pairs,
+    `${label} verdict accounting is inconsistent.`,
+  );
+  assert(evidence.effective_cross_key_pass_pairs === evidence.effective_cross_key_verdicts.pass, `${label} PASS count is inconsistent.`);
+  assert(evidence.cross_key_pass_pairs_targeting_reproducible_results <= evidence.effective_cross_key_pass_pairs, `${label} reproducible PASS count is inconsistent.`);
+  assert(evidence.result_targets_with_cross_key_review <= evidence.effective_cross_key_pairs, `${label} target count is inconsistent.`);
+  assert(evidence.reproducible_result_targets_with_cross_key_pass_review <= evidence.cross_key_pass_pairs_targeting_reproducible_results, `${label} reproducible target count is inconsistent.`);
+  assert(evidence.result_targets_with_multiple_cross_key_reviewers <= evidence.result_targets_with_cross_key_review, `${label} multi-reviewer target count is inconsistent.`);
+  assert(evidence.unique_cross_key_reviewer_keys <= evidence.effective_cross_key_pairs, `${label} reviewer-key count is inconsistent.`);
+  for (const key of ["top_cross_key_reviewer_share_ppm", "cross_key_reviewer_hhi_ppm"]) {
+    assert(evidence[key] <= 1_000_000, `${label}.${key} is out of bounds.`);
+  }
+  if (evidence.effective_cross_key_pairs === 0) {
+    assert(evidence.unique_cross_key_reviewer_keys === 0, `${label} empty reviewer-key count is inconsistent.`);
+    assert(evidence.top_cross_key_reviewer_share_ppm === 0, `${label} empty top share is inconsistent.`);
+    assert(evidence.cross_key_reviewer_hhi_ppm === 0, `${label} empty HHI is inconsistent.`);
+  } else {
+    assert(evidence.unique_cross_key_reviewer_keys > 0, `${label} reviewer-key count is inconsistent.`);
+    assert(evidence.top_cross_key_reviewer_share_ppm > 0, `${label} top share is inconsistent.`);
+    assert(evidence.cross_key_reviewer_hhi_ppm > 0, `${label} HHI is inconsistent.`);
+  }
+}
+
 function validateReportEvent(event, label) {
   assertExactObject(event, [
     "event_id", "type", "task_id", "did", "claimed_at", "observed_at", "source_ts", "parent_event_ids",
@@ -499,7 +559,7 @@ function validateSnapshotManifest(manifest, report, context) {
 function validateReport(report, context) {
   assertExactObject(report, [
     "schema", "source_event_count", "unattributable_observation_count", "source_digest", "signing_keys",
-    "evidence", "events", "rejected", "semantically_ignored", "limitations", "audit_core_sha256",
+    "evidence", "review_evidence", "events", "rejected", "semantically_ignored", "limitations", "audit_core_sha256",
     "generated_at", "event_state", "unsigned_proposals_observed", "build_room", "artifact_verification",
     "archive_policy", "snapshot_manifest", "snapshot_manifest_sha256", "network_sample",
   ], [], "report");
@@ -509,6 +569,7 @@ function validateReport(report, context) {
   assertHash(report.source_digest, "report.source_digest");
   assertCounter(report.signing_keys, "report.signing_keys");
   validateEvidence(report.evidence, "report.evidence");
+  validateReviewEvidence(report.review_evidence, "report.review_evidence");
   assert(Array.isArray(report.events) && report.events.length <= 1024, "report.events is invalid.");
   report.events.forEach((event, index) => validateReportEvent(event, `report.events[${index}]`));
   assert(new Set(report.events.map(event => event.event_id)).size === report.events.length, "report.events contains duplicate event IDs.");
@@ -536,6 +597,7 @@ function validateReport(report, context) {
     source_digest: report.source_digest,
     signing_keys: report.signing_keys,
     evidence: report.evidence,
+    review_evidence: report.review_evidence,
     events: report.events,
     rejected: report.rejected,
     semantically_ignored: report.semantically_ignored,
@@ -546,11 +608,53 @@ function validateReport(report, context) {
   assert(EVENT_STATES.has(report.event_state), "report.event_state is invalid.");
   assertCounter(report.unsigned_proposals_observed, "report.unsigned_proposals_observed");
 
-  assertExactObject(report.build_room, ["room", "messages_observed_in_tail", "collection_error"], [], "report.build_room");
+  assertExactObject(report.build_room, [
+    "room", "messages_observed_in_tail", "collection_error", "response_count", "first_seq", "last_seq",
+    "sequence_metadata_valid", "message_entries_truncated", "message_entries_uninspected",
+    "message_entries_rejected", "message_entries_deduplicated", "continuity_complete", "continuity_reason",
+  ], [], "report.build_room");
   assert(ROOM_RE.test(report.build_room.room ?? ""), "report.build_room.room is invalid.");
   assertCounter(report.build_room.messages_observed_in_tail, "report.build_room.messages_observed_in_tail");
   assert(report.build_room.messages_observed_in_tail <= 200, "report.build_room.messages_observed_in_tail is out of bounds.");
   if (report.build_room.collection_error !== null) assertBoundedText(report.build_room.collection_error, "report.build_room.collection_error", 256);
+  assertCounter(report.build_room.response_count, "report.build_room.response_count");
+  assert(report.build_room.response_count <= 200, "report.build_room.response_count is out of bounds.");
+  assert(report.build_room.messages_observed_in_tail <= report.build_room.response_count, "report.build_room response count is inconsistent.");
+  if (report.build_room.first_seq !== null) assertCounter(report.build_room.first_seq, "report.build_room.first_seq");
+  assertCounter(report.build_room.last_seq, "report.build_room.last_seq");
+  assert(typeof report.build_room.sequence_metadata_valid === "boolean", "report.build_room.sequence_metadata_valid is invalid.");
+  assertCounter(report.build_room.message_entries_truncated, "report.build_room.message_entries_truncated");
+  assertCounter(report.build_room.message_entries_uninspected, "report.build_room.message_entries_uninspected");
+  assertCounter(report.build_room.message_entries_rejected, "report.build_room.message_entries_rejected");
+  assertCounter(report.build_room.message_entries_deduplicated, "report.build_room.message_entries_deduplicated");
+  assert(
+    report.build_room.messages_observed_in_tail
+      + report.build_room.message_entries_rejected
+      + report.build_room.message_entries_deduplicated
+      + report.build_room.message_entries_truncated
+      === report.build_room.response_count,
+    "report.build_room response accounting is inconsistent.",
+  );
+  assert(typeof report.build_room.continuity_complete === "boolean", "report.build_room.continuity_complete is invalid.");
+  assert(/^[a-z0-9-]{1,80}$/u.test(report.build_room.continuity_reason ?? ""), "report.build_room.continuity_reason is invalid.");
+  if (report.build_room.sequence_metadata_valid) {
+    if (report.build_room.response_count === 0) {
+      assert(report.build_room.first_seq === null && report.build_room.last_seq === 0, "report.build_room empty cursor is inconsistent.");
+    } else {
+      assert(Number.isSafeInteger(report.build_room.first_seq) && report.build_room.first_seq >= 1, "report.build_room first_seq is invalid.");
+      assert(
+        report.build_room.last_seq === report.build_room.first_seq + report.build_room.response_count - 1,
+        "report.build_room sequence window is inconsistent.",
+      );
+    }
+  }
+  if (report.build_room.continuity_complete) {
+    assert(report.build_room.sequence_metadata_valid, "report.build_room continuity lacks valid sequence metadata.");
+    assert(report.build_room.message_entries_truncated === 0, "report.build_room continuity includes truncated entries.");
+    assert(report.build_room.message_entries_uninspected === 0, "report.build_room continuity includes uninspected entries.");
+    assert(report.build_room.message_entries_rejected === 0, "report.build_room continuity includes rejected entries.");
+    assert(report.build_room.message_entries_deduplicated === 0, "report.build_room continuity includes duplicate entries.");
+  }
 
   assertExactObject(report.artifact_verification, [
     "candidates", "attempted", "maximum_per_snapshot", "trusted_ref", "maximum_artifact_bytes",

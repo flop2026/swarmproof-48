@@ -247,6 +247,39 @@ test("bounds and deduplicates hostile room and message arrays", async () => {
   assert.equal(messageResult.message_entries_uninspected, 0);
 });
 
+test("retains a bounded contiguous room cursor and rejects inconsistent response metadata", async () => {
+  const messages = [
+    { seq: 41, ts: "2026-08-26T01:00:00Z", from: "a", text: "one" },
+    { seq: 42, ts: "2026-08-26T01:00:01Z", from: "b", text: "two" },
+  ];
+  const complete = await readRoom("one", 200, {
+    attempts: 1,
+    fetchImpl: async () => jsonResponse({
+      room: "one",
+      count: 2,
+      first_seq: 41,
+      last_seq: 42,
+      messages,
+    }),
+  });
+  assert.equal(complete.sequence_metadata_valid, true);
+  assert.equal(complete.response_count, 2);
+  assert.equal(complete.first_seq, 41);
+  assert.equal(complete.last_seq, 42);
+
+  const inconsistent = await readRoom("one", 200, {
+    attempts: 1,
+    fetchImpl: async () => jsonResponse({
+      room: "one",
+      count: 2,
+      first_seq: 40,
+      last_seq: 42,
+      messages,
+    }),
+  });
+  assert.equal(inconsistent.sequence_metadata_valid, false);
+});
+
 test("caps inspection work when a server ignores requested array limits", async () => {
   const roomResult = await listRooms(1, {
     attempts: 1,
