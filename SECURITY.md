@@ -41,6 +41,10 @@ The fixed-publication verifier ignores all index-supplied locations and fetches 
 implementation-pinned endpoints with redirects disabled, timeouts, and response-size bounds.
 Source-specific upstream/adoption/task references remain `not-checked` until a dedicated verifier
 validates them, and task submissions can never self-assert official acceptance or reward status.
+Current-index verification does not authenticate a previous hash or imply an immutable public
+history archive. A complete chain is checked only when canonical prior files are explicitly
+supplied from sequence 1 through the immediate predecessor. v1 permits control-claim renewal under
+the configured `did:key`; it has no Ed25519 key-rotation or successor-DID mechanism.
 
 The privacy audit rejects repository symlinks, unreviewed binary media, unexpected public-data
 fields, source maps, credential markers, and non-pseudonymous identifiers. After a static build,

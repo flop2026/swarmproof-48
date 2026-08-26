@@ -39,11 +39,11 @@ derived ID and duplicate IDs are rejected. Evidence entries are sorted and dedup
 their subject. Aggregate output counts each subject at most once per named facet; facet counts
 must never be added together as a total.
 
-The public snapshot at publication commit
-`24e6dfe6549cc791a64ed2d6e7d7364784b23959` maps to eight unique subjects. All eight have
-reproducible-artifact facets, while none in that snapshot has a cross-key review or SwarmProof
+The archived eight-result baseline maps to eight unique subjects. All eight have
+reproducible-artifact facets, while none in that baseline has a cross-key review or SwarmProof
 internal acceptance. The result is `8 unique`, not `16` from adding attributable and reproducible
-gates.
+gates. `prepare` derives and verifies the latest co-publication commit dynamically; documentation
+and tests do not pin a daily snapshot commit as a permanent constant.
 
 ## Evidence scopes
 
@@ -80,9 +80,28 @@ It is not upstream acceptance, official task acceptance, or token eligibility.
 The document has exactly `payload` and `proof`. The payload fixes schema, project, purpose,
 controller, canonical UTC issuance time, a positive decimal-string sequence, previous index hash,
 control-claim hash, and the ordered contribution array. Sequence 1 requires a null previous hash;
-later sequences require a SHA-256. Replacing an existing index must increment the sequence by one
-and name the exact prior file hash. The prior signature is verified independently, so rotating the
-current control claim does not make replacement impossible.
+later sequences require a SHA-256. For every sequence after 1, `create` requires an explicit
+`--previous` canonical signed index, verifies its configured controller and signature, increments
+its sequence by exactly one, and checks the exact complete-file SHA-256 link before reading the
+private key. A successor can be staged at a new `--out`. `--replace` is accepted only when the
+output already exists and its bytes exactly equal `--previous`.
+
+Ordinary verification checks the current signed document and its exact control claim only. A
+sequence-1 root reports history as `not-applicable-root-sequence`; a later sequence reports
+`not-checked`, even when its payload contains a syntactically valid previous hash. To verify
+complete history, repeat `--previous` in oldest-to-newest order, beginning with sequence 1 and
+ending with the immediate predecessor. Every supplied file is independently
+checked for canonical bytes, the configured controller, signature, exact sequence increment, and
+SHA-256 linkage. Historical control claims and evidence sources remain separately scoped.
+
+Only the current index is served from the two mutable well-known endpoints. They are not an
+immutable archive of earlier index versions. Preserve canonical prior files in a trusted archive
+before replacement if later complete-chain verification is required.
+
+Renewing the resource control claim under the same `did:key` is supported: the next index binds the
+new claim while its predecessor keeps the old claim hash. Actual Ed25519 key rotation is not
+supported in v1. A `did:key` encodes its public key, and v1 has no signed successor-DID mechanism;
+changing the key therefore changes the controller and fails the configured-controller check.
 
 The proof is exactly Ed25519, canonical unpadded base64url, and 64 decoded bytes. Unknown fields,
 numbers used in place of precision-safe decimal strings, non-canonical DIDs/timestamps/base64url,
@@ -114,11 +133,45 @@ npm run contribution-index -- verify \
   --publications
 ```
 
-`prepare` is unsigned and requires the full current report replay to pass. `create` reads a regular,
-owner-only Ed25519 key, derives the DID, zeros the input key buffer after parsing, writes
-atomically, and never prints the key, proof, signed file, or complete publication URL. The full
-project verifier reads immutable Git objects from the evidence publication commit without
-checking out or mutating the worktree.
+Prepare and stage a successor without overwriting the current index:
+
+```bash
+npm run contribution-index -- prepare \
+  --previous /archive/contribution-index-v1.json \
+  --out /tmp/contribution-index-v2-input.json
+
+npm run contribution-index -- create \
+  --input /tmp/contribution-index-v2-input.json \
+  --key /path/to/coordinator.pem \
+  --previous /archive/contribution-index-v1.json \
+  --out /tmp/contribution-index-v2.json
+```
+
+To overwrite the current mutable path, make that existing file the verified predecessor and add
+`--replace`. To verify a current sequence 3 and its complete chain, supply prior files from oldest
+to newest:
+
+```bash
+npm run contribution-index -- create \
+  --input /tmp/contribution-index-v2-input.json \
+  --key /path/to/coordinator.pem \
+  --previous public/.well-known/swarmproof-contribution-index-v1.json \
+  --out public/.well-known/swarmproof-contribution-index-v1.json \
+  --replace
+
+npm run contribution-index -- verify \
+  --file /archive/contribution-index-v3.json \
+  --previous /archive/contribution-index-v1.json \
+  --previous /archive/contribution-index-v2.json
+```
+
+`prepare` is unsigned and requires the full current report replay to pass. `create` validates all
+available non-secret input before reading a regular, owner-only Ed25519 key. A `finally` path zeros
+the mutable file-read buffer immediately after Node parses it, including parser failure, and the
+CLI never prints the key, proof, signed file, or complete publication URL. This does not erase the
+PEM file or guarantee erasure of copies retained by Node/OpenSSL, the allocator, or the operating
+system. The full project verifier reads immutable Git objects from the evidence publication
+commit without checking out or mutating the worktree.
 
 Online publication verification fetches only the implementation constants for the raw GitHub
 file and Pages well-known file. Requests reject redirects and oversized bodies; both copies must

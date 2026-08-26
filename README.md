@@ -70,6 +70,14 @@ proposal archive. `create` then signs the inspected input with the owner-only DI
 key or signing secret is embedded; a production index is created only by that separate local
 signing step.
 
+Sequence 1 has no predecessor. Every later `create` requires `--previous` naming the canonical
+signed immediate predecessor; this is required even when staging to a new output path. Verification
+without repeated `--previous` arguments reports sequence 1 as a root with no applicable history,
+but reports later history as `not-checked`. Complete-chain verification takes prior files in
+oldest-to-newest order starting at sequence 1. The mutable public endpoints serve only the current
+file, not an immutable index archive. Same-`did:key` control-claim renewal is supported;
+Ed25519/`did:key` rotation is not part of v1.
+
 ```bash
 npm run contribution-index -- prepare --out /tmp/contribution-index-input.json
 

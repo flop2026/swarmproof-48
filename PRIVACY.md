@@ -33,6 +33,11 @@ fields for a legal name, email, wallet, account-recovery data, device path, IP a
 message text, or private key. Official-task evidence can record `submitted` only and must keep
 official acceptance and reward status at `not-claimed`.
 
+The contribution-index signing CLI validates available non-secret inputs before reading the PEM.
+It overwrites its mutable file-read buffer in a `finally` path immediately after Node parses it,
+including parser failure. This does not erase the key file or guarantee erasure of copies retained
+by Node/OpenSSL, the allocator, or the operating system.
+
 Hashes of public short text may be vulnerable to guessing. They are published only where they
 are needed for reproducibility, and this limitation is disclosed in every dataset manifest.
 

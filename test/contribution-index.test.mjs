@@ -15,6 +15,7 @@ import {
   serializeContributionIndex,
   verifyContributionIndex,
   verifyContributionIndexControlClaim,
+  verifyContributionIndexHistory,
   verifyContributionIndexPublications,
   verifyContributionIndexReplacement,
 } from "../lib/contribution-index.mjs";
@@ -207,7 +208,7 @@ test("sequence and previous-index linkage are canonical and fail closed", () => 
   assert.equal(second.document.payload.previous_index_sha256, HASH_A);
 });
 
-test("replacement verifies the prior signature and chain without binding it to a rotated claim", () => {
+test("replacement verifies the prior signature and chain across a renewed same-DID claim", () => {
   const previous = fixture({ controlClaimSha256: HASH_A });
   const verified = verifyContributionIndexReplacement(previous.serialized, {
     sequence: "2",
@@ -237,10 +238,109 @@ test("replacement verifies the prior signature and chain without binding it to a
   const tampered = clone(previous.document);
   tampered.payload.issued_at = "2026-08-26T12:31:00.000Z";
   assert.throws(
-    () => verifyContributionIndexReplacement(tampered, {
+    () => verifyContributionIndexReplacement(`${canonicalize(tampered)}\n`, {
       sequence: "2",
       previous_index_sha256: previous.index_sha256,
     }, verifyOptions),
+    /signature is invalid/u,
+  );
+});
+
+test("complete history verification requires canonical sequence-1-to-current signed bytes", () => {
+  const first = fixture({ controlClaimSha256: HASH_A });
+  const second = fixture({
+    sequence: "2",
+    previousIndexSha256: first.index_sha256,
+    controlClaimSha256: HASH_B,
+  });
+  const third = fixture({
+    sequence: "3",
+    previousIndexSha256: second.index_sha256,
+    controlClaimSha256: HASH_C,
+  });
+  const history = verifyContributionIndexHistory(
+    [first.serialized, second.serialized],
+    third.serialized,
+    verifyOptions,
+  );
+  assert.equal(history.status, "pass");
+  assert.equal(history.index_count, 3);
+  assert.equal(history.first_sequence, "1");
+  assert.equal(history.current_sequence, "3");
+  assert.equal(history.current_index_sha256, third.index_sha256);
+
+  assert.throws(
+    () => verifyContributionIndexHistory([second.serialized], third.serialized, verifyOptions),
+    /must begin at sequence 1/u,
+  );
+  assert.throws(
+    () => verifyContributionIndexHistory(
+      [second.serialized, first.serialized],
+      third.serialized,
+      verifyOptions,
+    ),
+    /must begin at sequence 1/u,
+  );
+  assert.throws(
+    () => verifyContributionIndexHistory([first.document, second.serialized], third.serialized, verifyOptions),
+    /must be canonical serialized signed text/u,
+  );
+  assert.throws(
+    () => verifyContributionIndexHistory(
+      [first.serialized, `${second.serialized}\n`],
+      third.serialized,
+      verifyOptions,
+    ),
+    /not canonical JSON/u,
+  );
+  const mutatedSecond = clone(second.document);
+  mutatedSecond.payload.issued_at = "2026-08-26T12:31:00.000Z";
+  assert.throws(
+    () => verifyContributionIndexHistory(
+      [first.serialized, `${canonicalize(mutatedSecond)}\n`],
+      third.serialized,
+      verifyOptions,
+    ),
+    /signature is invalid/u,
+  );
+  const brokenThird = fixture({
+    sequence: "3",
+    previousIndexSha256: HASH_D,
+    controlClaimSha256: HASH_C,
+  });
+  assert.throws(
+    () => verifyContributionIndexHistory(
+      [first.serialized, second.serialized],
+      brokenThird.serialized,
+      verifyOptions,
+    ),
+    /does not name the preceding index/u,
+  );
+});
+
+test("facet derivation rejects mutable or unsigned index representations", () => {
+  const created = fixture();
+  const project = { config: { coordinator_did: fixtureDid } };
+  const representations = [
+    created.document,
+    { payload: created.document.payload },
+    verifyContributionIndex(created.serialized, verifyOptions),
+    Buffer.from(created.serialized, "utf8"),
+  ];
+  for (const representation of representations) {
+    assert.throws(
+      () => deriveContributionFacets(representation, project),
+      /canonical serialized signed index text/u,
+    );
+  }
+  assert.throws(
+    () => deriveContributionFacets(`${JSON.stringify(created.document, null, 2)}\n`, project),
+    /not canonical JSON/u,
+  );
+  const mutation = clone(created.document);
+  mutation.payload.issued_at = "2026-08-26T12:31:00.000Z";
+  assert.throws(
+    () => deriveContributionFacets(`${canonicalize(mutation)}\n`, project),
     /signature is invalid/u,
   );
 });
@@ -447,18 +547,15 @@ test("fixed publication verification follows no index-supplied URL", async () =>
   );
 });
 
-test("current public snapshot becomes eight subjects, not additive ladder events", async () => {
-  const [reportText, statusText, events, configText, tasksText] = await Promise.all([
+test("current public snapshot prepares eight subjects and unsigned facet objects are rejected", async () => {
+  const [reportText, statusText, configText] = await Promise.all([
     readFile(new URL("../public/data/report.json", import.meta.url), "utf8"),
     readFile(new URL("../public/data/status.json", import.meta.url), "utf8"),
-    readFile(new URL("../public/data/events.jsonl", import.meta.url), "utf8"),
     readFile(new URL("../config/event.json", import.meta.url), "utf8"),
-    readFile(new URL("../config/tasks.json", import.meta.url), "utf8"),
   ]);
   const report = JSON.parse(reportText);
   const status = JSON.parse(statusText);
   const config = JSON.parse(configText);
-  const tasks = JSON.parse(tasksText);
   const contributions = contributionsFromSwarmproofReport(report, status, PUBLICATION_COMMIT);
   assert.equal(contributions.length, 8);
   assert.equal(new Set(contributions.map(item => item.contribution_id)).size, 8);
@@ -476,51 +573,9 @@ test("current public snapshot becomes eight subjects, not additive ladder events
     control_claim_sha256: HASH_A,
     contributions,
   };
-  const reportSha256 = sha256Hex(canonicalize(report));
-  const snapshotManifestSha256 = sha256Hex(canonicalize(report.snapshot_manifest));
-  const facets = deriveContributionFacets({ payload }, {
-    report,
-    status,
-    events,
-    config,
-    tasks,
-    publicationCommit: PUBLICATION_COMMIT,
-    reportVerification: {
-      schema: "swarmproof-report-verification-v1",
-      validation_scope: "project-context",
-      report_sha256: reportSha256,
-      snapshot_manifest_sha256: snapshotManifestSha256,
-      checks: {
-        report_status_binding: "pass",
-        audit_core_replay: "pass",
-        archive_manifest_binding: "pass",
-        evidence_status_binding: "pass",
-      },
-    },
-  });
-  assert.deepEqual(facets.counts, {
-    unique_contributions: 8,
-    with_swarmproof_attribution: 8,
-    with_reproducible_artifact: 8,
-    with_cross_key_review: 0,
-    with_cross_key_pass_review: 0,
-    with_swarmproof_internal_acceptance: 0,
-    with_upstream_acceptance_reference: 0,
-    with_external_adoption_reference: 0,
-    with_official_task_submission: 0,
-  });
-  assert.ok(facets.contributions.every(item => item.facets.swarmproof.evidence_level === "REPRODUCIBLE"));
-
   assert.throws(
-    () => deriveContributionFacets({ payload }, {
-      report,
-      status,
-      events,
-      config,
-      tasks,
-      publicationCommit: PUBLICATION_COMMIT,
-    }),
-    /matching full project report replay/u,
+    () => deriveContributionFacets({ payload }, { config }),
+    /canonical serialized signed index text/u,
   );
 });
 
@@ -651,7 +706,7 @@ test("cross-key review evidence requires a valid different-key REVIEW for the sa
       evidence_status_binding: "pass",
     },
   };
-  const facets = deriveContributionFacets(created.document, {
+  const facets = deriveContributionFacets(created.serialized, {
     report,
     status,
     events: records,
@@ -749,7 +804,7 @@ test("cross-key review evidence requires a valid different-key REVIEW for the sa
     reportVerification: supersededVerification,
   };
   assert.throws(
-    () => deriveContributionFacets(supersededPass.document, supersededProject),
+    () => deriveContributionFacets(supersededPass.serialized, supersededProject),
     /superseded by a later valid verdict/u,
   );
 
@@ -761,7 +816,7 @@ test("cross-key review evidence requires a valid different-key REVIEW for the sa
     controlClaimSha256: HASH_A,
     expectedController: fixtureDid,
   });
-  const rejectFacets = deriveContributionFacets(effectiveReject.document, supersededProject);
+  const rejectFacets = deriveContributionFacets(effectiveReject.serialized, supersededProject);
   assert.equal(rejectFacets.counts.with_cross_key_review, 1);
   assert.equal(rejectFacets.counts.with_cross_key_pass_review, 0);
   assert.equal(rejectFacets.contributions[0].facets.cross_key_reviews[0].verdict, "REJECT");
