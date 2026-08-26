@@ -5,6 +5,7 @@ import { canonicalize } from "../lib/canonical.mjs";
 import {
   assessCheckpointChain,
   assessCheckpointInputs,
+  assessSourceCommitComparison,
   checkpointAgeSeconds,
   createCheckpointEnvelope,
   meaningfulCheckpointSha,
@@ -101,6 +102,23 @@ test("accepts a fresh, published, full-size active snapshot", () => {
   assert.equal(assessed.eligible, true);
   assert.equal(assessed.report_sha256, input.status.report_sha256);
   assert.match(assessed.meaningful_sha256, /^[0-9a-f]{64}$/);
+});
+
+test("accepts only a published source commit that is the trusted-main merge base", () => {
+  const sourceCommit = "c".repeat(40);
+  const mainCommit = "d".repeat(40);
+  assert.deepEqual(assessSourceCommitComparison({
+    status: "ahead",
+    base_commit: { sha: sourceCommit },
+    merge_base_commit: { sha: sourceCommit },
+    head_commit: { sha: mainCommit },
+  }, sourceCommit), { eligible: true, main_commit: mainCommit });
+  assert.throws(() => assessSourceCommitComparison({
+    status: "diverged",
+    base_commit: { sha: sourceCommit },
+    merge_base_commit: { sha: "e".repeat(40) },
+    head_commit: { sha: mainCommit },
+  }, sourceCommit), /not an ancestor/u);
 });
 
 test("allows meaningful daily maintenance after the event is complete", () => {

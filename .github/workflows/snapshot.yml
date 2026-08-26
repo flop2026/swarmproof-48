@@ -30,6 +30,24 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
+      - name: Configure pseudonymous commit identity
+        shell: bash
+        run: |
+          git config user.name "SwarmProof Coordinator"
+          git config user.email "${{ github.repository_owner_id }}+${{ github.repository_owner }}@users.noreply.github.com"
+          git config user.useConfigOnly true
+      - name: Finalize elapsed event window
+        id: lifecycle
+        shell: bash
+        run: |
+          lifecycle=$(node scripts/finalize.mjs)
+          if [[ "$lifecycle" == *'"action":"finalized"'* ]]; then
+            echo "finalized=1" >> "$GITHUB_OUTPUT"
+            git add config/event.json
+            git commit -m "event: close 48-hour audit window"
+          else
+            echo "finalized=0" >> "$GITHUB_OUTPUT"
+          fi
       - name: Select bounded cadence
         id: cadence
         shell: bash
@@ -37,7 +55,10 @@ jobs:
           state=$(node -p "JSON.parse(require('fs').readFileSync('config/event.json','utf8')).state")
           run_snapshot=0
           network=0
-          if [ "$SWARMPROOF_EVENT_NAME" = "workflow_dispatch" ]; then
+          if [ "${{ steps.lifecycle.outputs.finalized }}" = "1" ]; then
+            run_snapshot=1
+            network=1
+          elif [ "$SWARMPROOF_EVENT_NAME" = "workflow_dispatch" ]; then
             run_snapshot=1
             network=1
           elif [ "$SWARMPROOF_SCHEDULE" = "*/15 * * * *" ] && [ "$state" = "active" ]; then
@@ -68,7 +89,7 @@ jobs:
       - name: Validate generated output
         if: steps.cadence.outputs.run_snapshot == '1'
         run: npm run validate
-      - name: Commit data-only update
+      - name: Commit and publish snapshot update
         if: steps.cadence.outputs.run_snapshot == '1'
         shell: bash
         run: |
@@ -80,9 +101,9 @@ jobs:
           if [ -n "$unexpected" ]; then
             exit 1
           fi
-          git config user.name "SwarmProof Coordinator"
-          git config user.email "${{ github.repository_owner_id }}+${{ github.repository_owner }}@users.noreply.github.com"
-          git config user.useConfigOnly true
           git add public/data
           git commit -m "data: daily evidence snapshot"
           git push origin HEAD:main
+      - name: Verify the exact snapshot reached Cloudflare Pages
+        if: steps.cadence.outputs.run_snapshot == '1'
+        run: node scripts/verify-deployment.mjs

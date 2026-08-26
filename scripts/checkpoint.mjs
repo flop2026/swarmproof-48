@@ -7,13 +7,16 @@ import { lstat, mkdir, open, readFile, rename, rm, writeFile } from "node:fs/pro
 import {
   assessCheckpointChain,
   assessCheckpointInputs,
+  assessSourceCommitComparison,
   checkpointAgeSeconds,
   createCheckpointEnvelope,
 } from "../lib/checkpoint.mjs";
 import { didFromPrivateKey, signUtf8 } from "../lib/crypto.mjs";
+import { reconcilePublishedState } from "../lib/lifecycle.mjs";
 import { verifyEnvelope } from "../lib/protocol.mjs";
 
 const ORIGIN = "https://technocore.chat";
+const PUBLIC_ORIGIN = "https://swarmproof-48-e463.pages.dev";
 const PROJECT_ROOT = fileURLToPath(new URL("..", import.meta.url));
 const DEFAULT_STATE_FILE = join(homedir(), ".local", "state", "technocore-chat", "swarmproof-48-checkpoint.json");
 const DEFAULT_LOCK_FILE = join(homedir(), ".local", "state", "technocore-chat", "swarmproof-48-checkpoint.lock");
@@ -112,6 +115,44 @@ async function boundedText(response, limit, label) {
   return body;
 }
 
+async function publishedJson(path, label) {
+  const response = await fetchWithRetry(label, () => fetch(
+    `${PUBLIC_ORIGIN}${path}?n=${Date.now()}`,
+    {
+      headers: { "cache-control": "no-cache" },
+      signal: AbortSignal.timeout(20_000),
+    },
+  ));
+  const body = await boundedText(response, 2_000_000, label);
+  try {
+    return JSON.parse(body);
+  } catch {
+    throw new Error(`${label} response is not valid JSON.`);
+  }
+}
+
+async function verifyTrustedSourceCommit(config, status) {
+  const [owner, repository] = config.repository.split("/");
+  const response = await fetchWithRetry("trusted-main comparison", () => fetch(
+    `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repository)}/compare/${status.source_commit}...main`,
+    {
+      headers: {
+        accept: "application/vnd.github+json",
+        "user-agent": "SwarmProof-48",
+      },
+      signal: AbortSignal.timeout(20_000),
+    },
+  ));
+  const body = await boundedText(response, 2_000_000, "Trusted-main comparison");
+  let comparison;
+  try {
+    comparison = JSON.parse(body);
+  } catch {
+    throw new Error("Trusted-main comparison response is not valid JSON.");
+  }
+  assessSourceCommitComparison(comparison, status.source_commit);
+}
+
 function ownerDidFromBody(body) {
   const dids = body
     .split("\n")
@@ -207,11 +248,18 @@ async function main() {
     status: process.env.SWARMPROOF_STATUS_FILE ?? join(PROJECT_ROOT, "public", "data", "status.json"),
     state: process.env.SWARMPROOF_CHECKPOINT_STATE_FILE ?? DEFAULT_STATE_FILE,
   };
-  const [config, report, status] = await Promise.all([
-    readJson(paths.config),
-    readJson(paths.report),
-    readJson(paths.status),
-  ]);
+  const localConfig = await readJson(paths.config);
+  const usePublishedInputs = process.env.SWARMPROOF_PUBLIC_ORIGIN !== undefined;
+  if (usePublishedInputs && process.env.SWARMPROOF_PUBLIC_ORIGIN !== PUBLIC_ORIGIN) {
+    throw new Error("SWARMPROOF_PUBLIC_ORIGIN must be the canonical project origin.");
+  }
+  const [report, status] = usePublishedInputs
+    ? await Promise.all([
+      publishedJson("/data/report.json", "Published report"),
+      publishedJson("/data/status.json", "Published status"),
+    ])
+    : await Promise.all([readJson(paths.report), readJson(paths.status)]);
+  const config = usePublishedInputs ? reconcilePublishedState(localConfig, status) : localConfig;
   const now = new Date();
   const maxAgeSeconds = process.env.SWARMPROOF_CHECKPOINT_MAX_AGE_SECONDS === undefined
     ? null
@@ -221,6 +269,7 @@ async function main() {
     output({ action: "skip", reason: assessment.reason, dry_run: dryRun });
     return;
   }
+  if (usePublishedInputs) await verifyTrustedSourceCommit(config, status);
   if (!dryRun) {
     releaseCheckpointLock = await acquireCheckpointLock(
       process.env.SWARMPROOF_CHECKPOINT_LOCK_FILE ?? DEFAULT_LOCK_FILE,

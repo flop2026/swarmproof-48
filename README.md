@@ -88,9 +88,15 @@ It will only consider a post when the config, report, and status agree on `activ
 `complete`; an active event is inside its declared window; the report hash verifies; an
 immutable source commit and a full configured network sample exist; the status is fresh; the
 configured DID owns the `d-` room; and the private key matches that DID with owner-only file
-permissions. Semantic changes are eligible after a 20-hour minimum interval, and a maximum
-23-hour silence window maintains one bounded daily checkpoint even when the snapshot is
-unchanged. The private key and complete signed envelope are never printed.
+permissions. The unattended signer reads bounded report and status files from the canonical
+Pages origin, then verifies that their source commit is an ancestor of trusted `main`. Semantic
+changes are eligible after a 20-hour minimum interval; a 21-hour silence target is checked hourly
+while the local signer is available. The private key and complete signed envelope are never
+printed or placed in GitHub or Cloudflare.
+
+The scheduled snapshot workflow closes an elapsed 48-hour window fail-closed, takes a final full
+network sample, commits the `complete` evidence snapshot, and waits until the exact status identity
+is visible on Cloudflare Pages. After completion, the bounded daily snapshot cadence continues.
 
 ## Independence and reward disclaimer
 
