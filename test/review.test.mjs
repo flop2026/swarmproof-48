@@ -7,7 +7,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import test from "node:test";
-import { verifyUtf8 } from "../lib/crypto.mjs";
+import { canonicalize } from "../lib/canonical.mjs";
+import { sha256Hex, verifyUtf8 } from "../lib/crypto.mjs";
 import { createEnvelope } from "../lib/protocol.mjs";
 import {
   assertReviewSnapshotTrusted,
@@ -66,11 +67,32 @@ function emptyRoom() {
   };
 }
 
-function roomWithEvent(created) {
-  return roomWithEvents([created]);
+function continuousEmptyRoom(context) {
+  const sequence = context.report.build_room.last_seq;
+  if (sequence === 0) return emptyRoom();
+  return {
+    room: context.config.build_room,
+    count: 1,
+    first_seq: sequence,
+    last_seq: sequence,
+    messages: [{
+      seq: sequence,
+      ts: context.report.generated_at,
+      from: "ordinary",
+      nonce: 1,
+      text: "ordinary",
+    }],
+  };
 }
 
-function roomWithEvents(events, { firstSeq = 20, sourceTimes = [] } = {}) {
+function roomWithEvent(context, created) {
+  return roomWithEvents(context, [created]);
+}
+
+function roomWithEvents(context, events, {
+  firstSeq = context.report.build_room.last_seq + 1,
+  sourceTimes = [],
+} = {}) {
   return {
     room: "swarmproof-48-e463",
     count: events.length,
@@ -113,6 +135,31 @@ test("binds a public RESULT to its exact TASK ancestry and content hash", async 
   assert.equal(context.task.payload.did, context.config.coordinator_did);
   assert.equal(context.target.payload.content_sha256, context.target.payload.artifact.sha256);
   assert.match(stableTargetBinding(context), /^[0-9a-f]{64}$/u);
+});
+
+test("completed trusted snapshots remain available only for non-writing read-back", async () => {
+  const input = await fixture();
+  const config = { ...input.config, state: "complete" };
+  const report = { ...input.report, event_state: "complete" };
+  const status = {
+    ...input.status,
+    state: "complete",
+    report_sha256: sha256Hex(canonicalize(report)),
+  };
+  const options = {
+    ...input,
+    config,
+    report,
+    status,
+    decision: "PASS",
+    now: new Date(Date.parse(config.ends_at) + 1),
+  };
+  assert.throws(
+    () => validateAndBindPublicReview(options),
+    /only be prepared while the event is active/u,
+  );
+  const context = validateAndBindPublicReview({ ...options, allowComplete: true });
+  assert.equal(context.config.state, "complete");
 });
 
 test("fails closed on report/status, archive, target-type, and source-commit tampering", async () => {
@@ -186,7 +233,7 @@ test("requires the exact public snapshot bytes to coexist on trusted HEAD histor
 test("prepares a cross-key REVIEW without exposing signed material in its summary", async () => {
   const context = await boundContext();
   const key = privatePem();
-  const prepared = prepareSignedReview({ context, roomData: emptyRoom(), privateKeyPem: key, now: context.now ?? new Date(context.report.generated_at) });
+  const prepared = prepareSignedReview({ context, roomData: continuousEmptyRoom(context), privateKeyPem: key, now: context.now ?? new Date(context.report.generated_at) });
   assert(prepared.created);
   assert.equal(prepared.created.payload.type, "REVIEW");
   assert.deepEqual(prepared.created.payload.parent_event_ids, [context.target.event_id]);
@@ -204,16 +251,16 @@ test("prepares a cross-key REVIEW without exposing signed material in its summar
 test("refuses a self-review and suppresses an identical observed review", async () => {
   const context = await boundContext();
   const key = privatePem();
-  const first = prepareSignedReview({ context, roomData: emptyRoom(), privateKeyPem: key, now: new Date(context.report.generated_at) });
+  const first = prepareSignedReview({ context, roomData: continuousEmptyRoom(context), privateKeyPem: key, now: new Date(context.report.generated_at) });
   const selfContext = structuredClone(context);
   selfContext.target.payload.did = first.reviewerDid;
   assert.throws(
-    () => prepareSignedReview({ context: selfContext, roomData: emptyRoom(), privateKeyPem: key, now: new Date(context.report.generated_at) }),
+    () => prepareSignedReview({ context: selfContext, roomData: continuousEmptyRoom(selfContext), privateKeyPem: key, now: new Date(context.report.generated_at) }),
     /different from the RESULT author/u,
   );
   const duplicate = prepareSignedReview({
     context,
-    roomData: roomWithEvent(first.created),
+    roomData: roomWithEvent(context, first.created),
     privateKeyPem: key,
     now: new Date(Date.parse(context.report.generated_at) + 1_000),
   });
@@ -225,14 +272,14 @@ test("does not suppress against a structurally valid REVIEW with the wrong conte
   const context = await boundContext();
   const key = privatePem();
   const now = new Date(context.report.generated_at);
-  const valid = prepareSignedReview({ context, roomData: emptyRoom(), privateKeyPem: key, now });
+  const valid = prepareSignedReview({ context, roomData: continuousEmptyRoom(context), privateKeyPem: key, now });
   const invalid = createEnvelope({
     ...valid.created.payload,
     content_sha256: "0".repeat(64),
   }, key, contextProtocolOptions(context));
   const prepared = prepareSignedReview({
     context,
-    roomData: roomWithEvent(invalid),
+    roomData: roomWithEvent(context, invalid),
     privateKeyPem: key,
     now: new Date(now.getTime() + 1_000),
   });
@@ -248,13 +295,13 @@ test("a newer valid REJECT supersedes an older PASS for duplicate suppression", 
   const firstTime = new Date(passContext.report.generated_at);
   const pass = prepareSignedReview({
     context: passContext,
-    roomData: emptyRoom(),
+    roomData: continuousEmptyRoom(passContext),
     privateKeyPem: key,
     now: firstTime,
   });
   const reject = prepareSignedReview({
     context: rejectContext,
-    roomData: roomWithEvent(pass.created),
+    roomData: roomWithEvent(rejectContext, pass.created),
     privateKeyPem: key,
     now: new Date(firstTime.getTime() + 1_000),
   });
@@ -262,7 +309,7 @@ test("a newer valid REJECT supersedes an older PASS for duplicate suppression", 
   assert.equal(reject.created.payload.review.verdict, "REJECT");
   const requestedPass = prepareSignedReview({
     context: passContext,
-    roomData: roomWithEvents([pass.created, reject.created]),
+    roomData: roomWithEvents(passContext, [pass.created, reject.created]),
     privateKeyPem: key,
     now: new Date(firstTime.getTime() + 2_000),
   });
@@ -276,7 +323,7 @@ test("read-back rejects a REVIEW outside the event window or before its target",
   const key = privatePem();
   const prepared = prepareSignedReview({
     context,
-    roomData: emptyRoom(),
+    roomData: continuousEmptyRoom(context),
     privateKeyPem: key,
     now: new Date(context.report.generated_at),
   });
@@ -286,20 +333,20 @@ test("read-back rejects a REVIEW outside the event window or before its target",
   }, key, contextProtocolOptions(context));
   assert.equal(findValidObservedReview({
     context,
-    roomData: roomWithEvent(wrongContent),
+    roomData: roomWithEvent(context, wrongContent),
     eventId: wrongContent.event_id,
     observedAt: new Date(context.report.generated_at),
   }), null);
   const afterWindow = new Date(Date.parse(context.config.ends_at) + 1_000).toISOString();
   assert.equal(findValidObservedReview({
     context,
-    roomData: roomWithEvents([prepared.created], { sourceTimes: [afterWindow] }),
+    roomData: roomWithEvents(context, [prepared.created], { sourceTimes: [afterWindow] }),
     eventId: prepared.created.event_id,
     observedAt: afterWindow,
   }), null);
   assert.equal(findValidObservedReview({
     context,
-    roomData: roomWithEvents([prepared.created], {
+    roomData: roomWithEvents(context, [prepared.created], {
       sourceTimes: [new Date(Date.parse(context.target.source_ts) - 1_000).toISOString()],
     }),
     eventId: prepared.created.event_id,
@@ -312,14 +359,14 @@ test("read-back uses collector-exact transport timestamps and verified event IDs
   const key = privatePem();
   const prepared = prepareSignedReview({
     context,
-    roomData: emptyRoom(),
+    roomData: continuousEmptyRoom(context),
     privateKeyPem: key,
     now: new Date(context.report.generated_at),
   });
   const microseconds = prepared.created.payload.claimed_at.replace(/Z$/u, "000Z");
   const observed = findValidObservedReview({
     context,
-    roomData: roomWithEvents([prepared.created], { sourceTimes: [microseconds] }),
+    roomData: roomWithEvents(context, [prepared.created], { sourceTimes: [microseconds] }),
     eventId: prepared.created.event_id,
     observedAt: new Date(context.report.generated_at),
   });
@@ -332,7 +379,7 @@ test("read-back uses collector-exact transport timestamps and verified event IDs
     "2026-08-26T08:30:00.123456+24:00",
   ]) assert.equal(findValidObservedReview({
     context,
-    roomData: roomWithEvents([prepared.created], { sourceTimes: [sourceTime] }),
+    roomData: roomWithEvents(context, [prepared.created], { sourceTimes: [sourceTime] }),
     eventId: prepared.created.event_id,
     observedAt: new Date(context.report.generated_at),
   }), null, sourceTime);
@@ -341,14 +388,14 @@ test("read-back uses collector-exact transport timestamps and verified event IDs
 test("chooses a bounded monotonic transport-safe nonce", async () => {
   const context = await boundContext("FAIL");
   const key = privatePem();
-  const seed = prepareSignedReview({ context, roomData: emptyRoom(), privateKeyPem: key, now: new Date(context.report.generated_at) });
+  const seed = prepareSignedReview({ context, roomData: continuousEmptyRoom(context), privateKeyPem: key, now: new Date(context.report.generated_at) });
   const priorNonce = Number(seed.created.payload.nonce) + 50;
   const room = {
     room: "swarmproof-48-e463",
     count: 1,
-    first_seq: 20,
-    last_seq: 20,
-    messages: [{ seq: 20, from: seed.reviewerDid, nonce: priorNonce, text: "ordinary", ts: context.report.generated_at }],
+    first_seq: context.report.build_room.last_seq + 1,
+    last_seq: context.report.build_room.last_seq + 1,
+    messages: [{ seq: context.report.build_room.last_seq + 1, from: seed.reviewerDid, nonce: priorNonce, text: "ordinary", ts: context.report.generated_at }],
   };
   const next = prepareSignedReview({ context, roomData: room, privateKeyPem: key, now: new Date(context.report.generated_at) });
   assert.equal(Number(next.created.payload.nonce), priorNonce + 1);
@@ -389,7 +436,6 @@ test("fetches only the three fixed public documents with bounded GET requests", 
   };
   const fetched = await fetchPublicReviewDocuments({
     fetchImpl,
-    publicOrigin: "https://fixture.invalid/",
     cacheBust: 123,
   });
   assert.equal(fetched.status.report_sha256, input.status.report_sha256);
@@ -401,11 +447,15 @@ test("fetches only the three fixed public documents with bounded GET requests", 
   for (const call of calls) {
     assert.equal(call.options.method, "GET");
     assert.equal(call.options.redirect, "error");
-    assert.equal(call.parsed.origin, "https://fixture.invalid");
+    assert.equal(call.parsed.origin, "https://swarmproof-48-e463.pages.dev");
     assert.equal(call.parsed.searchParams.get("n"), "123");
   }
   await assert.rejects(
     fetchPublicReviewDocuments({ fetchImpl, publicOrigin: "http://fixture.invalid/" }),
+    /Public origin is invalid/u,
+  );
+  await assert.rejects(
+    fetchPublicReviewDocuments({ fetchImpl, publicOrigin: "https://fixture.invalid/" }),
     /Public origin is invalid/u,
   );
 });
@@ -415,34 +465,36 @@ test("validates exact live-room sequence metadata", async () => {
   const fetchImpl = async () => new Response(JSON.stringify(response), { status: 200 });
   assert.deepEqual(await fetchReviewRoom({
     fetchImpl,
-    technocoreOrigin: "https://fixture.invalid/",
     cacheBust: 123,
   }), response);
   const invalidFetch = async () => new Response(JSON.stringify({ ...response, count: 1 }), { status: 200 });
   await assert.rejects(
-    fetchReviewRoom({ fetchImpl: invalidFetch, technocoreOrigin: "https://fixture.invalid/" }),
+    fetchReviewRoom({ fetchImpl: invalidFetch }),
     /response count is invalid/u,
+  );
+  await assert.rejects(
+    fetchReviewRoom({ fetchImpl, technocoreOrigin: "https://fixture.invalid/" }),
+    /Technocore origin is invalid/u,
   );
 });
 
 test("POST signs the fixed room transport tuple and requires read-back", async () => {
   const context = await boundContext();
   const key = privatePem();
-  const prepared = prepareSignedReview({ context, roomData: emptyRoom(), privateKeyPem: key, now: new Date(context.report.generated_at) });
+  const prepared = prepareSignedReview({ context, roomData: continuousEmptyRoom(context), privateKeyPem: key, now: new Date(context.report.generated_at) });
   let postedBody;
   const fetchImpl = async (url, options) => {
     if (options.method === "POST") {
       postedBody = JSON.parse(options.body);
       return new Response("{}", { status: 200 });
     }
-    return new Response(JSON.stringify(roomWithEvent(prepared.created)), { status: 200 });
+    return new Response(JSON.stringify(roomWithEvent(context, prepared.created)), { status: 200 });
   };
   const observed = await postSignedReview({
     context,
     prepared,
     privateKeyPem: key,
     fetchImpl,
-    technocoreOrigin: "https://fixture.invalid/",
   });
   assert.equal(observed.event_id, prepared.created.event_id);
   assert.equal(postedBody.did, prepared.reviewerDid);

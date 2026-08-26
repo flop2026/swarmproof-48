@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-import { lstat, readFile, writeFile } from "node:fs/promises";
+import { constants as fsConstants } from "node:fs";
+import { open, writeFile } from "node:fs/promises";
 import {
   acquireReviewLock,
   assertReviewSnapshotTrusted,
@@ -63,13 +64,33 @@ function requireOnly(options, allowed) {
   for (const name of options.keys()) if (!allowed.has(name)) usage();
 }
 
-async function readBoundedRegular(path, maximumBytes, label) {
-  const metadata = await lstat(path);
-  assert(metadata.isFile(), `${label} must be a regular file.`);
-  assert(metadata.size > 0 && metadata.size <= maximumBytes, `${label} size is invalid.`);
-  const content = await readFile(path, "utf8");
-  assert(Buffer.byteLength(content, "utf8") <= maximumBytes, `${label} is oversized.`);
-  return content;
+async function readBoundedRegular(path, maximumBytes, label, { ownerOnly = false } = {}) {
+  let handle;
+  try {
+    handle = await open(path, fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW);
+  } catch {
+    throw new Error(`${label} could not be opened as a non-symlink file.`);
+  }
+  try {
+    const metadata = await handle.stat();
+    assert(metadata.isFile(), `${label} must be a regular file.`);
+    assert(metadata.size > 0 && metadata.size <= maximumBytes, `${label} size is invalid.`);
+    if (ownerOnly) {
+      assert((metadata.mode & 0o077) === 0, `${label} permissions must deny group and other access.`);
+      if (typeof process.getuid === "function") {
+        assert(metadata.uid === process.getuid(), `${label} must be owned by the current user.`);
+      }
+    }
+    const bytes = await handle.readFile();
+    try {
+      assert(bytes.length > 0 && bytes.length <= maximumBytes, `${label} size changed during its safe read.`);
+      return bytes.toString("utf8");
+    } finally {
+      if (ownerOnly) bytes.fill(0);
+    }
+  } finally {
+    await handle.close();
+  }
 }
 
 async function readJson(path, maximumBytes, label) {
@@ -81,8 +102,8 @@ async function readJson(path, maximumBytes, label) {
   }
 }
 
-async function readCanonical(path, validator, label) {
-  const content = await readBoundedRegular(path, REVIEW_DOCUMENT_MAX_BYTES, label);
+async function readCanonical(path, validator, label, options) {
+  const content = await readBoundedRegular(path, REVIEW_DOCUMENT_MAX_BYTES, label, options);
   return parseCanonicalReviewDocument(content, validator, label);
 }
 
@@ -93,7 +114,7 @@ async function writeCanonical(path, value, mode, label) {
   return { bytes: Buffer.byteLength(bytes, "utf8"), sha256: reviewDocumentSha256(value) };
 }
 
-async function loadReviewContext(options, targetEventId, decision) {
+async function loadReviewContext(options, targetEventId, decision, { allowComplete = false } = {}) {
   const configPath = options.get("config") ?? "config/event.json";
   const tasksPath = options.get("tasks") ?? "config/tasks.json";
   const [config, manifest, published] = await Promise.all([
@@ -108,6 +129,7 @@ async function loadReviewContext(options, targetEventId, decision) {
     targetEventId,
     decision,
     now: new Date(),
+    allowComplete,
   });
   await assertReviewSourceCommitTrusted(context.sourceCommit, process.cwd());
   const evidenceCommit = await assertReviewSnapshotTrusted({
@@ -244,8 +266,14 @@ async function main() {
       transportPath,
       value => validateReviewTransport(value, packet, request),
       "Review transport",
+      { ownerOnly: true },
     );
-    const context = await loadReviewContext(options, packet.target.event_id, packet.decision);
+    const context = await loadReviewContext(
+      options,
+      packet.target.event_id,
+      packet.decision,
+      { allowComplete: command === "readback" },
+    );
     let result;
     if (command === "readback") {
       result = await readBackReviewTransport({ context, packet, request, transport });
@@ -260,7 +288,7 @@ async function main() {
     process.stdout.write(`${JSON.stringify({
       schema: "swarmproof-review-flow-summary-v1",
       action: command,
-      wrote_network: command === "post" && result.status === "posted-and-observed",
+      wrote_network: result.wroteNetwork,
       status: result.status,
       event_id: transport.event_id,
       reviewer_did: transport.did,
@@ -268,6 +296,10 @@ async function main() {
       verdict: packet.protocol_verdict,
       observed_source_seq: result.observed?.source_seq ?? null,
       observed_source_ts: result.observed?.source_ts ?? null,
+      observation_source: result.observationSource,
+      effective: result.effective,
+      effective_event_id: result.effectiveReview?.event_id ?? null,
+      effective_verdict: result.effectiveReview?.payload.review.verdict ?? null,
       operator_independence: "unknown",
     }, null, 2)}\n`);
     return;

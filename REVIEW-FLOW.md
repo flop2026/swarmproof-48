@@ -13,7 +13,7 @@ eligibility.
 ## Trust boundaries
 
 Run `inspect` from a trusted, up-to-date clone. It fetches only the fixed Pages report, status, and
-event archive; checks bounded same-origin responses; replays the audit core; checks the immutable
+event archive; rejects caller-selected origins; checks bounded same-origin responses; replays the audit core; checks the immutable
 artifact result and coordinator TASK ancestry; and requires the exact public snapshot bytes to
 exist together on trusted `HEAD` history.
 
@@ -24,13 +24,17 @@ the manifest-entry hash fixed by the signed TASK. Those complete envelopes are w
 the packet file and never printed. Server observation metadata and the artifact-check verdict are
 Git-publication evidence rather than coordinator signatures. The packet's SHA-256 binds every later
 file, but is not itself a coordinator signature. A reviewer moving it to an offline signer should
-compare the printed SHA-256 through a trusted channel. `post` independently reconstructs all
-inspection-critical fields from a fresh trusted public snapshot before sending anything.
+compare the printed SHA-256 through a trusted channel. The signer also creates a domain-separated
+receipt signature over the exact packet hash, request hash, and REVIEW event ID, so an intermediary
+cannot transplant the protocol signatures onto a substituted receipt. `post` reconstructs every
+packet field—including snapshot hashes, publication commits, timestamp, and evidence level—from a
+fresh trusted public snapshot before sending anything.
 
 All flow documents are canonical JSON plus exactly one LF. Unknown fields, pretty JSON, CRLF,
 oversized input, symlinks, non-canonical timestamps, unsafe numeric nonces, inconsistent hashes,
 wrong rooms, wrong tasks, invalid signatures, and changed target bindings fail closed. The signed
-transport file is created owner-only (`0600`) and is never printed. It contains public-to-be
+transport file is created owner-only (`0600`), reopened through a non-symlink file descriptor, and
+rejected if its ownership or permissions are unsafe. It is never printed. It contains public-to-be
 published signed material, not the private key, but should still be handled as a single-use
 capability until its outcome is known.
 
@@ -81,8 +85,9 @@ npm run review -- sign \
 ```
 
 The key must be a regular, non-symlink file with no group or other permissions. The mutable read
-buffer is zeroed immediately after Node parses it. The command creates both the SP1 REVIEW envelope
-signature and the exact fixed-room transport signature, writes them only to the owner-only
+buffer is zeroed immediately after Node parses it. The command creates the SP1 REVIEW envelope
+signature, the packet/request receipt signature, and the exact fixed-room transport signature,
+writes them only to the owner-only
 transport file, and prints only hashes, event ID, DID, and non-sensitive bindings.
 
 Ed25519 signing is deterministic, so identical packet, request, and key bytes produce the same
@@ -103,14 +108,19 @@ npm run review -- post \
 
 Before any POST, the command:
 
-1. cryptographically verifies both signatures and every file hash;
-2. re-fetches and replays the trusted public snapshot;
+1. cryptographically verifies all three signatures and every file hash;
+2. re-fetches and replays the trusted public snapshot and requires every packet claim to match it;
 3. requires the target binding and controller DID to remain unchanged;
-4. reads the fixed build room and suppresses an already-observed or equivalent verdict; and
-5. rejects a transport whose reviewer nonce is no longer greater than the live maximum.
+4. rejects posting before the signed `claimed_at` or outside the active window;
+5. requires the live room tail to overlap or directly continue the trusted snapshot cursor;
+6. reads the fixed build room and suppresses an already-observed or equivalent verdict; and
+7. rejects a transport whose reviewer nonce is no longer greater than the live maximum.
 
-After POST it reads the room up to four times and accepts success only when the exact event ID is a
-semantically valid, authoritative room observation. An HTTP response alone is never success. If a
+After POST it reads the room up to four times and reports both exact observation and whether that
+event is still the newest effective verdict from the reviewer key. `observed-superseded`,
+`already-observed-superseded`, and `posted-and-observed-superseded` are explicit non-effective
+outcomes. An older PASS is never presented as the current verdict. An HTTP response alone is never
+success. If a
 network error leaves the result uncertain, do not sign a replacement immediately; perform the
 non-writing read-back first:
 
@@ -123,6 +133,10 @@ npm run review -- readback \
 
 If it remains unobserved and another message has consumed the nonce, repeat `payload` and `sign`
 with a new explicit nonce. Never send the same signed transport to another room.
+
+Read-back is non-writing and may use a trusted completed snapshot after the event closes. If the
+exact event has left the bounded live tail but exists in the replayed archive, output labels its
+observation source `trusted-archive`.
 
 ## 5. Emit safe PROMOTE material
 
@@ -149,8 +163,15 @@ npm run review -- promote \
 This command does not read the coordinator key, sign, or post. The emitted payload still requires a
 separate coordinator signature, transport signature, POST confirmation, and authoritative
 read-back. A later valid `REJECT` from the same reviewer supersedes an earlier `PASS`; the helper
-will not use the superseded PASS. SwarmProof internal promotion is not upstream acceptance,
+will not use the superseded PASS. Replay accepts only the first chronologically valid PROMOTE for a
+RESULT and rejects controller-authored or self-review evidence and any PROMOTE observed outside the
+event window. SwarmProof internal promotion is not upstream acceptance,
 official acceptance, or reward eligibility.
+
+SP1 v1 PROMOTE names the RESULT as its sole parent; it does not encode one selected REVIEW event ID.
+The printed qualifying-review ID is therefore a preflight explanation, not a claim that those bytes
+are inside the later PROMOTE signature. Replay authorization is the effective prior cross-key PASS
+set ordered before the PROMOTE.
 
 ## Contribution-index relationship
 

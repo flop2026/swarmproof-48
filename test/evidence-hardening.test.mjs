@@ -240,6 +240,90 @@ test("a superseded PASS cannot authorize promotion and a later PASS is not retro
   )));
 });
 
+test("self-review and controller review cannot create cross-key or promotion evidence", () => {
+  const coordinatorKey = privatePem();
+  const authorKey = privatePem();
+  const coordinatorDid = didFromPrivateKey(coordinatorKey);
+  const task = createEnvelope(payload("TASK", "replay", "2026-08-26T00:00:00.000Z", 170), coordinatorKey, { coordinatorDid });
+  const hash = "9".repeat(64);
+  const result = createEnvelope(resultPayload("replay", "2026-08-26T00:10:00.000Z", 171, task.event_id, hash), authorKey);
+  const reviewPayload = key => createEnvelope(payload("REVIEW", "replay", "2026-08-26T00:20:00.000Z", key === authorKey ? 172 : 173, {
+    parent_event_ids: [result.event_id],
+    content_sha256: hash,
+    review: { target_event_id: result.event_id, verdict: "PASS" },
+  }), key);
+  const selfReview = reviewPayload(authorKey);
+  const controllerReview = reviewPayload(coordinatorKey);
+  const promote = createEnvelope(payload("PROMOTE", "replay", "2026-08-26T00:25:00.000Z", 174, {
+    parent_event_ids: [result.event_id],
+    content_sha256: hash,
+  }), coordinatorKey, { coordinatorDid });
+  const audited = auditEvents([
+    record(task, 1),
+    record(result, 2),
+    record(selfReview, 3),
+    record(controllerReview, 4),
+    record(promote, 5),
+  ], {
+    allowedRepositories: [REPOSITORY],
+    coordinatorDid,
+    startsAt: START,
+    endsAt: END,
+    artifactChecks: { [result.event_id]: { status: "pass" } },
+  });
+  assert.equal(audited.report.evidence.cross_key_reviewed, 0);
+  assert.equal(audited.report.evidence.accepted, 0);
+  assert.ok(audited.report.semantically_ignored.some(entry => (
+    entry.event_id === selfReview.event_id && entry.reason === "review-target-or-key-distinctness-is-invalid"
+  )));
+  assert.ok(audited.report.semantically_ignored.some(entry => (
+    entry.event_id === controllerReview.event_id && entry.reason === "review-target-or-key-distinctness-is-invalid"
+  )));
+});
+
+test("post-window and duplicate PROMOTEs cannot change effective acceptance", () => {
+  const coordinatorKey = privatePem();
+  const authorKey = privatePem();
+  const reviewerKey = privatePem();
+  const coordinatorDid = didFromPrivateKey(coordinatorKey);
+  const task = createEnvelope(payload("TASK", "replay", "2026-08-26T00:00:00.000Z", 180), coordinatorKey, { coordinatorDid });
+  const hash = "a".repeat(64);
+  const result = createEnvelope(resultPayload("replay", "2026-08-26T00:10:00.000Z", 181, task.event_id, hash), authorKey);
+  const review = createEnvelope(payload("REVIEW", "replay", "2026-08-26T00:20:00.000Z", 182, {
+    parent_event_ids: [result.event_id],
+    content_sha256: hash,
+    review: { target_event_id: result.event_id, verdict: "PASS" },
+  }), reviewerKey);
+  const promotionPayload = (claimedAt, nonce) => payload("PROMOTE", "replay", claimedAt, nonce, {
+    parent_event_ids: [result.event_id],
+    content_sha256: hash,
+  });
+  const first = createEnvelope(promotionPayload("2026-08-26T00:25:00.000Z", 183), coordinatorKey, { coordinatorDid });
+  const duplicate = createEnvelope(promotionPayload("2026-08-26T00:26:00.000Z", 184), coordinatorKey, { coordinatorDid });
+  const postWindow = createEnvelope(promotionPayload("2026-08-28T00:00:01.000Z", 185), coordinatorKey, { coordinatorDid });
+  const audited = auditEvents([
+    record(task, 1),
+    record(result, 2),
+    record(review, 3),
+    record(first, 4),
+    record(duplicate, 5),
+    record(postWindow, 6, "2026-08-28T00:00:01.000Z", "2026-08-28T00:00:01.000Z"),
+  ], {
+    allowedRepositories: [REPOSITORY],
+    coordinatorDid,
+    startsAt: START,
+    endsAt: END,
+    artifactChecks: { [result.event_id]: { status: "pass" } },
+  });
+  assert.equal(audited.report.evidence.accepted, 1);
+  assert.ok(audited.report.semantically_ignored.some(entry => (
+    entry.event_id === duplicate.event_id && entry.reason === "duplicate-promotion-for-result"
+  )));
+  assert.ok(audited.report.semantically_ignored.some(entry => (
+    entry.event_id === postWindow.event_id && entry.reason === "claimed-after-event-window"
+  )));
+});
+
 test("a pre-start transport timestamp stays ineligible when first polled after start", () => {
   const coordinatorKey = privatePem();
   const authorKey = privatePem();

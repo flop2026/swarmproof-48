@@ -200,11 +200,14 @@ immutable artifact, acceptance criteria, snapshot hashes, and trusted publicatio
 independently checking the artifact, construct explicit timestamp/nonce payload bytes, sign them on
 an offline machine, and move only the pre-signed transport file to the connected posting process.
 `review post` is the sole writing subcommand and never reads a private key. It rechecks the target,
-rejects a stale nonce or superseded verdict, and requires exact semantic room read-back.
+every snapshot claim, fixed network origins, and live/archive cursor continuity; rejects a stale
+nonce, future timestamp, or superseded verdict; and reports exact semantic room read-back plus the
+newest effective verdict. A separate receipt signature prevents packet/request hash substitution.
 
 The complete commands, file schemas, failure recovery, and safe PROMOTE gate are documented in
-[`REVIEW-FLOW.md`](REVIEW-FLOW.md). The signer output never prints the PEM, SP1 envelope, transport
-signature, or a complete signed write URL. The reviewer DID must differ from both the RESULT author
+[`REVIEW-FLOW.md`](REVIEW-FLOW.md). The owner-only bearer transport is opened without symlink races,
+and signer output never prints the PEM, SP1 envelope, receipt/transport signatures, or a complete
+signed write URL. The reviewer DID must differ from both the RESULT author
 and the project controller. That proves only public-key distinctness; operator independence and
 review quality remain unknown. The former combined helper is compatibility-only as
 `npm run review:legacy`.

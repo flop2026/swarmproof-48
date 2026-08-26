@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { generateKeyPairSync } from "node:crypto";
-import { chmod, lstat, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { chmod, lstat, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -20,6 +20,7 @@ import {
   createReviewTransport,
   parseCanonicalReviewDocument,
   postReviewTransport,
+  readBackReviewTransport,
   reviewDocumentSha256,
   validateReviewSigningRequest,
   validateReviewTargetPacket,
@@ -61,7 +62,28 @@ function emptyRoom() {
   return { room: "swarmproof-48-e463", count: 0, first_seq: null, last_seq: 0, messages: [] };
 }
 
-function roomWithEvents(events, { firstSeq = 20, extra = [] } = {}) {
+function continuousEmptyRoom(context) {
+  const sequence = context.report.build_room.last_seq;
+  if (sequence === 0) return emptyRoom();
+  return {
+    room: context.config.build_room,
+    count: 1,
+    first_seq: sequence,
+    last_seq: sequence,
+    messages: [{
+      seq: sequence,
+      ts: context.report.generated_at,
+      from: "ordinary",
+      nonce: 1,
+      text: "ordinary",
+    }],
+  };
+}
+
+function roomWithEvents(context, events, {
+  firstSeq = context.report.build_room.last_seq + 1,
+  extra = [],
+} = {}) {
   const messages = [
     ...events.map((event, index) => ({
       seq: firstSeq + index,
@@ -171,6 +193,10 @@ test("offline signing requests require an explicit distinct reviewer and determi
     () => createReviewSigningRequest({ ...input, nonce: String(BigInt(Number.MAX_SAFE_INTEGER) + 1n) }),
     /safe positive decimal|string|safe transport range/u,
   );
+  assert.throws(
+    () => createReviewSigningRequest({ ...input, nonce: "0000000000000001" }),
+    /safe positive decimal/u,
+  );
   const request = createReviewSigningRequest(input);
   const wrongPacketHash = { ...request, target_packet_sha256: "f".repeat(64) };
   assert.throws(
@@ -202,6 +228,7 @@ test("offline transport signing is deterministic and every binding fails closed"
     value => { value.signing_request_sha256 = "0".repeat(64); },
     value => { value.room = "lobby"; },
     value => { value.event_id = "0".repeat(64); },
+    value => { value.receipt_signature = flipLast(value.receipt_signature); },
     value => { value.transport_signature = flipLast(value.transport_signature); },
     value => { value.envelope = flipLast(value.envelope); },
   ]) {
@@ -209,6 +236,24 @@ test("offline transport signing is deterministic and every binding fails closed"
     mutate(tampered);
     assert.throws(() => validateReviewTransport(tampered, inputs.packet, inputs.request));
   }
+
+  const substitutedPacket = structuredClone(inputs.packet);
+  substitutedPacket.snapshot.report_sha256 = "0".repeat(64);
+  validateReviewTargetPacket(substitutedPacket);
+  const substitutedRequest = {
+    ...inputs.request,
+    target_packet_sha256: reviewDocumentSha256(substitutedPacket),
+  };
+  validateReviewSigningRequest(substitutedRequest, substitutedPacket);
+  const substitutedTransport = {
+    ...inputs.transport,
+    target_packet_sha256: reviewDocumentSha256(substitutedPacket),
+    signing_request_sha256: reviewDocumentSha256(substitutedRequest),
+  };
+  assert.throws(
+    () => validateReviewTransport(substitutedTransport, substitutedPacket, substitutedRequest),
+    /receipt signature verification failed/u,
+  );
 });
 
 test("posting consumes a pre-signed transport without a key and requires verified read-back", async () => {
@@ -236,11 +281,63 @@ test("posting consumes a pre-signed transport without a key and requires verifie
     transport: misleadingTransport,
     fetchImpl: async () => {
       misleadingFetches += 1;
-      return new Response(JSON.stringify(emptyRoom()), { status: 200 });
+      return new Response(JSON.stringify(continuousEmptyRoom(context)), { status: 200 });
     },
-    technocoreOrigin: "https://fixture.invalid/",
+    clock: () => new Date(Date.parse(inputs.request.payload.claimed_at) + 1),
   }), /inspection material changed/u);
   assert.equal(misleadingFetches, 0);
+
+  for (const mutate of [
+    packet => { packet.snapshot.report_sha256 = "0".repeat(64); },
+    packet => { packet.snapshot.evidence_commit = "1".repeat(40); },
+    packet => {
+      packet.target.evidence_level = packet.target.evidence_level === "ACCEPTED"
+        ? "REPRODUCIBLE"
+        : "ACCEPTED";
+    },
+  ]) {
+    const substitutedPacket = structuredClone(inputs.packet);
+    mutate(substitutedPacket);
+    validateReviewTargetPacket(substitutedPacket);
+    const substitutedRequest = createReviewSigningRequest({
+      packet: substitutedPacket,
+      reviewerDid: inputs.transport.did,
+      claimedAt: inputs.request.payload.claimed_at,
+      nonce: inputs.request.payload.nonce,
+    });
+    const substitutedTransport = createReviewTransport({
+      packet: substitutedPacket,
+      request: substitutedRequest,
+      privateKey: inputs.key,
+    });
+    let fetches = 0;
+    await assert.rejects(postReviewTransport({
+      context,
+      packet: substitutedPacket,
+      request: substitutedRequest,
+      transport: substitutedTransport,
+      fetchImpl: async () => {
+        fetches += 1;
+        return new Response(JSON.stringify(continuousEmptyRoom(context)), { status: 200 });
+      },
+      clock: () => new Date(Date.parse(inputs.request.payload.claimed_at) + 1),
+    }), /snapshot or evidence level changed/u);
+    assert.equal(fetches, 0);
+  }
+
+  let futureFetches = 0;
+  await assert.rejects(postReviewTransport({
+    context,
+    packet: inputs.packet,
+    request: inputs.request,
+    transport: inputs.transport,
+    fetchImpl: async () => {
+      futureFetches += 1;
+      return new Response(JSON.stringify(continuousEmptyRoom(context)), { status: 200 });
+    },
+    clock: () => new Date(Date.parse(inputs.request.payload.claimed_at) - 1),
+  }), /claimed_at is still in the future/u);
+  assert.equal(futureFetches, 0);
 
   let posted = false;
   let postedBody = null;
@@ -251,8 +348,8 @@ test("posting consumes a pre-signed transport without a key and requires verifie
       return new Response("{}", { status: 200 });
     }
     return new Response(JSON.stringify(posted
-      ? roomWithEvents([createdFromInputs(inputs)])
-      : emptyRoom()), { status: 200 });
+      ? roomWithEvents(context, [createdFromInputs(inputs)])
+      : continuousEmptyRoom(context)), { status: 200 });
   };
   const result = await postReviewTransport({
     context,
@@ -260,7 +357,7 @@ test("posting consumes a pre-signed transport without a key and requires verifie
     request: inputs.request,
     transport: inputs.transport,
     fetchImpl,
-    technocoreOrigin: "https://fixture.invalid/",
+    clock: () => new Date(Date.parse(inputs.request.payload.claimed_at) + 1),
   });
   assert.equal(result.status, "posted-and-observed");
   assert.equal(result.observed.event_id, inputs.transport.event_id);
@@ -269,9 +366,9 @@ test("posting consumes a pre-signed transport without a key and requires verifie
   assert.equal(postedBody.sig, inputs.transport.transport_signature);
 
   let writes = 0;
-  const staleRoom = roomWithEvents([], {
+  const staleRoom = roomWithEvents(context, [], {
     extra: [{
-      seq: 20,
+      seq: context.report.build_room.last_seq + 1,
       ts: inputs.request.payload.claimed_at,
       from: inputs.transport.did,
       nonce: Number(inputs.transport.nonce),
@@ -288,9 +385,26 @@ test("posting consumes a pre-signed transport without a key and requires verifie
     request: inputs.request,
     transport: inputs.transport,
     fetchImpl: staleFetch,
-    technocoreOrigin: "https://fixture.invalid/",
+    clock: () => new Date(Date.parse(inputs.request.payload.claimed_at) + 1),
   }), /nonce is no longer greater/u);
   assert.equal(writes, 0);
+
+  const gapRoom = roomWithEvents(context, [createdFromInputs(inputs)], {
+    firstSeq: context.report.build_room.last_seq + 2,
+  });
+  let gapWrites = 0;
+  await assert.rejects(postReviewTransport({
+    context,
+    packet: inputs.packet,
+    request: inputs.request,
+    transport: inputs.transport,
+    fetchImpl: async (_url, options) => {
+      if (options.method === "POST") gapWrites += 1;
+      return new Response(JSON.stringify(gapRoom), { status: 200 });
+    },
+    clock: () => new Date(Date.parse(inputs.request.payload.claimed_at) + 1),
+  }), /does not overlap or continue/u);
+  assert.equal(gapWrites, 0);
 
   const rejectContext = await fixture("FAIL");
   const rejectPacket = createReviewTargetPacket(rejectContext);
@@ -312,7 +426,7 @@ test("posting consumes a pre-signed transport without a key and requires verifie
       rejectionPosted = true;
       return new Response("{}", { status: 200 });
     }
-    return new Response(JSON.stringify(roomWithEvents([
+    return new Response(JSON.stringify(roomWithEvents(rejectContext, [
       createdFromInputs(inputs),
       ...(rejectionPosted ? [createdFromInputs({ request: rejectRequest, transport: rejectTransport })] : []),
     ])), { status: 200 });
@@ -323,10 +437,62 @@ test("posting consumes a pre-signed transport without a key and requires verifie
     request: rejectRequest,
     transport: rejectTransport,
     fetchImpl: correctionFetch,
-    technocoreOrigin: "https://fixture.invalid/",
+    clock: () => new Date(Date.parse(rejectRequest.payload.claimed_at) + 1),
   });
   assert.equal(correction.status, "posted-and-observed");
   assert.equal(correction.observed.payload.review.verdict, "REJECT");
+});
+
+test("read-back and repost explicitly report a superseded exact verdict", async () => {
+  const passContext = await fixture("PASS");
+  const inputs = reviewInputs(passContext);
+  const rejectContext = await fixture("FAIL");
+  const rejectPacket = createReviewTargetPacket(rejectContext);
+  const rejectClaimedAt = new Date(Date.parse(inputs.request.payload.claimed_at) + 1_000).toISOString();
+  const rejectRequest = createReviewSigningRequest({
+    packet: rejectPacket,
+    reviewerDid: inputs.transport.did,
+    claimedAt: rejectClaimedAt,
+    nonce: String(Date.parse(rejectClaimedAt)),
+  });
+  const rejectTransport = createReviewTransport({
+    packet: rejectPacket,
+    request: rejectRequest,
+    privateKey: inputs.key,
+  });
+  const roomData = roomWithEvents(passContext, [
+    createdFromInputs(inputs),
+    createdFromInputs({ request: rejectRequest, transport: rejectTransport }),
+  ]);
+  const fetchImpl = async () => new Response(JSON.stringify(roomData), { status: 200 });
+
+  const readback = await readBackReviewTransport({
+    context: passContext,
+    packet: inputs.packet,
+    request: inputs.request,
+    transport: inputs.transport,
+    fetchImpl,
+  });
+  assert.equal(readback.status, "observed-superseded");
+  assert.equal(readback.effective, false);
+  assert.equal(readback.effectiveReview.event_id, rejectTransport.event_id);
+
+  let writes = 0;
+  const repost = await postReviewTransport({
+    context: passContext,
+    packet: inputs.packet,
+    request: inputs.request,
+    transport: inputs.transport,
+    fetchImpl: async (_url, options) => {
+      if (options.method === "POST") writes += 1;
+      return new Response(JSON.stringify(roomData), { status: 200 });
+    },
+    clock: () => new Date(Date.parse(rejectClaimedAt) + 1),
+  });
+  assert.equal(repost.status, "already-observed-superseded");
+  assert.equal(repost.effective, false);
+  assert.equal(repost.effectiveReview.event_id, rejectTransport.event_id);
+  assert.equal(writes, 0);
 });
 
 test("promotion material requires an observed, effective PASS from a distinct DID", async () => {
@@ -334,7 +500,7 @@ test("promotion material requires an observed, effective PASS from a distinct DI
   const reviewerKey = privateKey();
   const pass = prepareSignedReview({
     context,
-    roomData: emptyRoom(),
+    roomData: continuousEmptyRoom(context),
     privateKeyPem: reviewerKey,
     now: new Date(context.report.generated_at),
   });
@@ -342,7 +508,7 @@ test("promotion material requires an observed, effective PASS from a distinct DI
   const nonce = String(Date.parse(claimedAt));
   const prepared = createPromotionMaterial({
     context,
-    roomData: roomWithEvents([pass.created]),
+    roomData: roomWithEvents(context, [pass.created]),
     reviewEventId: pass.created.event_id,
     claimedAt,
     nonce,
@@ -354,7 +520,7 @@ test("promotion material requires an observed, effective PASS from a distinct DI
 
   assert.throws(() => createPromotionMaterial({
     context,
-    roomData: emptyRoom(),
+    roomData: continuousEmptyRoom(context),
     reviewEventId: pass.created.event_id,
     claimedAt,
     nonce,
@@ -363,20 +529,20 @@ test("promotion material requires an observed, effective PASS from a distinct DI
   const rejectContext = await fixture("FAIL");
   const rejection = prepareSignedReview({
     context: rejectContext,
-    roomData: roomWithEvents([pass.created]),
+    roomData: roomWithEvents(rejectContext, [pass.created]),
     privateKeyPem: reviewerKey,
     now: new Date(Date.parse(pass.created.payload.claimed_at) + 1_000),
   });
   assert.throws(() => createPromotionMaterial({
     context,
-    roomData: roomWithEvents([pass.created, rejection.created]),
+    roomData: roomWithEvents(context, [pass.created, rejection.created]),
     reviewEventId: pass.created.event_id,
     claimedAt: new Date(Date.parse(rejection.created.payload.claimed_at) + 1_000).toISOString(),
     nonce: String(Date.parse(rejection.created.payload.claimed_at) + 1_000),
   }), /superseded/u);
   assert.throws(() => createPromotionMaterial({
     context,
-    roomData: roomWithEvents([pass.created]),
+    roomData: roomWithEvents(context, [pass.created]),
     reviewEventId: pass.created.event_id,
     claimedAt: pass.created.payload.claimed_at,
     nonce: "1",
@@ -419,6 +585,31 @@ test("CLI signs only after validating non-secret inputs and never prints signed 
       "Review transport",
     );
     assert.equal(reviewDocumentSha256(writtenTransport), summary.transport_sha256);
+    assert(!serializedSummary.includes(inputs.transport.receipt_signature));
+
+    await chmod(transportPath, 0o644);
+    await assert.rejects(executeFile(process.execPath, [
+      CLI,
+      "post",
+      "--packet", packetPath,
+      "--request", requestPath,
+      "--transport", transportPath,
+      "--confirm", "swarmproof-48-e463",
+    ], { cwd: PROJECT_ROOT, encoding: "utf8" }), error => (
+      error.code === 1 && /permissions must deny group and other access/u.test(error.stderr)
+    ));
+    await chmod(transportPath, 0o600);
+    const transportLinkPath = path.join(directory, "transport-link.json");
+    await symlink(transportPath, transportLinkPath);
+    await assert.rejects(executeFile(process.execPath, [
+      CLI,
+      "readback",
+      "--packet", packetPath,
+      "--request", requestPath,
+      "--transport", transportLinkPath,
+    ], { cwd: PROJECT_ROOT, encoding: "utf8" }), error => (
+      error.code === 1 && /could not be opened as a non-symlink file/u.test(error.stderr)
+    ));
 
     const invalid = { ...inputs.request, target_packet_sha256: "0".repeat(64) };
     const invalidPath = path.join(directory, "invalid-request.json");
