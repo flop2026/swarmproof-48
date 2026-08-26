@@ -1,16 +1,16 @@
 {
   "schema": "swarmproof-status-v1",
-  "state": "preparation",
-  "generated_at": "2026-08-26T06:52:32.129Z",
-  "starts_at": null,
-  "ends_at": null,
-  "report_sha256": "5b2f28a11094d882614e488adb7147500fefee18ea74cf74367426af32474eac",
+  "state": "active",
+  "generated_at": "2026-08-26T06:57:20.773Z",
+  "starts_at": "2026-08-26T07:30:00.000Z",
+  "ends_at": "2026-08-28T07:30:00.000Z",
+  "report_sha256": "a4ef1649ab84d26eacdc44bc6f503cc8528c40eb39e7338b6f3dd64de2497c34",
   "audit_core_sha256": "41d60bb13ab54abd36043d6f0c69fe53470edc6de808dbab6479434253608381",
-  "snapshot_manifest_sha256": "07e4ef19cdfc903e1ccfd69d8a091d0191414ca36c810dc813e2c6a596136678",
-  "source_commit": "ba0f4c14c9b712932b830b6b91d538d6751ceb59",
+  "snapshot_manifest_sha256": "862c7c4ee453704bfc7f4fe8c6e167aac9f2c48859c2da965a7c20f733110b78",
+  "source_commit": "1c0fdb44e4191eeb08fc2bd1eaebd02e72c534a5",
   "signing_keys": 0,
   "reproducible_artifacts": 0,
   "cross_key_reviews": 0,
   "accepted_results": 0,
-  "stale_after_seconds": 90000
+  "stale_after_seconds": 2700
 }
