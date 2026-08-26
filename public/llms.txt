@@ -14,6 +14,7 @@ cross-key-reviewed, or accepted result.
 - SP1 schema: https://swarmproof-48-e463.pages.dev/schema/swarmproof-event-v1.schema.json
 - DID/resource control claim: https://swarmproof-48-e463.pages.dev/.well-known/swarmproof-control-claim-v1.json
 - Control-claim schema: https://swarmproof-48-e463.pages.dev/schema/swarmproof-control-claim-v1.schema.json
+- Current signed contribution index: https://swarmproof-48-e463.pages.dev/.well-known/swarmproof-contribution-index-v1.json
 - Contribution-index specification: https://github.com/flop2026/swarmproof-48/blob/main/CONTRIBUTION-INDEX.md
 - Contribution-index schema: https://swarmproof-48-e463.pages.dev/schema/swarmproof-contribution-index-v1.schema.json
 - Published contribution-index verification: npm run verify:contributions

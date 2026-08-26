@@ -64,6 +64,11 @@ controller's assertion; it does not turn server metadata into a signature, a dif
 an independent operator, an upstream merge into authorship proof, or a task submission into
 official acceptance or reward eligibility.
 
+The current canonical signed document is published at
+[`/.well-known/swarmproof-contribution-index-v1.json`](public/.well-known/swarmproof-contribution-index-v1.json).
+Its signature and eight subject records are controller assertions whose evidence must still pass
+the separately scoped project and publication verifiers below.
+
 Index generation is intentionally a two-step local operation. `prepare` first fully replays the
 public report and pins the exact Git commit that published its report, status, event archive, and
 proposal archive. `create` then signs the inspected input with the owner-only DID key. No private
