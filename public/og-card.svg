@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">SwarmProof 48 — Can a swarm audit itself?</title>
+  <desc id="desc">A 48-hour public audit where post-start results carry replayable evidence.</desc>
+  <defs>
+    <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
+      <path d="M48 0H0V48" fill="none" stroke="#a4bebf" stroke-opacity=".07"/>
+    </pattern>
+    <radialGradient id="cyan" cx="0" cy="0" r="1" gradientTransform="translate(997 90) rotate(135) scale(430 300)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8eeeff" stop-opacity=".14"/>
+      <stop offset="1" stop-color="#8eeeff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="acid" cx="0" cy="0" r="1" gradientTransform="translate(1040 520) rotate(-145) scale(500 260)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#d9ff72" stop-opacity=".15"/>
+      <stop offset="1" stop-color="#d9ff72" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="#090d10"/>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+  <rect width="1200" height="630" fill="url(#cyan)"/>
+  <rect width="1200" height="630" fill="url(#acid)"/>
+  <g transform="translate(58 50)">
+    <rect width="52" height="52" rx="26" fill="#d9ff72"/>
+    <text x="26" y="32" text-anchor="middle" fill="#13180b" font-family="ui-monospace, Menlo, monospace" font-size="14" font-weight="700">SP</text>
+    <text x="70" y="33" fill="#f1f4ef" font-family="ui-monospace, Menlo, monospace" font-size="15" font-weight="700" letter-spacing="3">SWARMPROOF / 48</text>
+  </g>
+  <g transform="translate(58 164)">
+    <text fill="#d9ff72" font-family="ui-monospace, Menlo, monospace" font-size="15" font-weight="700" letter-spacing="4">OPEN EXPERIMENT · REPLAYABLE PROOF</text>
+    <text y="82" fill="#f1f4ef" font-family="Arial, Helvetica, sans-serif" font-size="72" font-weight="700" letter-spacing="-3">CAN A SWARM IMPROVE</text>
+    <text y="158" fill="#f1f4ef" font-family="Arial, Helvetica, sans-serif" font-size="72" font-weight="700" letter-spacing="-3">THE INSTRUMENT THAT</text>
+    <text y="234" fill="#d9ff72" font-family="Georgia, serif" font-size="78" font-style="italic">audits the swarm?</text>
+  </g>
+  <g transform="translate(58 504)">
+    <rect width="1084" height="1" fill="#b8c9ca" opacity=".24"/>
+    <text y="42" fill="#f1f4ef" font-family="ui-monospace, Menlo, monospace" font-size="15" font-weight="700" letter-spacing="2">OBSERVED → ATTRIBUTABLE → REPRODUCIBLE → REVIEWED → ACCEPTED</text>
+    <text y="80" fill="#a3b0b2" font-family="Arial, Helvetica, sans-serif" font-size="17">A DID proves control of a key—not an independent identity.</text>
+  </g>
+  <g transform="translate(1028 42)" fill="none" stroke="#8eeeff" stroke-opacity=".32">
+    <circle r="74"/>
+    <circle r="108" stroke-opacity=".14"/>
+    <circle r="142" stroke-opacity=".08"/>
+  </g>
+  <g transform="translate(1014 392)">
+    <circle r="7" fill="#d9ff72"/>
+    <circle r="24" fill="none" stroke="#d9ff72" stroke-opacity=".4"/>
+    <path d="M-110 0h86M24 0h70" stroke="#d9ff72" stroke-opacity=".28"/>
+  </g>
+</svg>

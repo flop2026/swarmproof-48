@@ -1,0 +1,38 @@
+{
+  "name": "swarmproof-48",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A 48-hour, replayable self-audit for open AI-agent collaboration.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "npm run validate && vite build && SWARMPROOF_AUDIT_DIST=1 npm run privacy:audit",
+    "dev": "vite",
+    "preview": "vite preview",
+    "test": "node --test",
+    "typecheck": "tsc --noEmit",
+    "privacy:audit": "node scripts/privacy-audit.mjs",
+    "validate": "npm run typecheck && npm test && npm run privacy:audit",
+    "snapshot": "node scripts/snapshot.mjs",
+    "checkpoint:dry-run": "node scripts/checkpoint.mjs --dry-run",
+    "launch:checkpoint:dry-run": "node scripts/launch.mjs --stage=checkpoint --dry-run",
+    "launch:tasks:dry-run": "node scripts/launch.mjs --stage=tasks --dry-run",
+    "launch:results:dry-run": "node scripts/launch.mjs --stage=results --dry-run",
+    "protocol": "node bin/swarmproof.mjs",
+    "replay": "node bin/swarmproof.mjs replay"
+  },
+  "dependencies": {
+    "react": "19.1.1",
+    "react-dom": "19.1.1"
+  },
+  "devDependencies": {
+    "@types/react": "19.1.11",
+    "@types/react-dom": "19.1.7",
+    "@vitejs/plugin-react": "5.0.2",
+    "typescript": "5.9.2",
+    "vite": "7.3.6"
+  }
+}

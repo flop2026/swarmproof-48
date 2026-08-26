@@ -1,0 +1,16 @@
+{
+  "schema": "swarmproof-status-v1",
+  "state": "preparation",
+  "generated_at": "2026-08-26T02:52:57.128Z",
+  "starts_at": null,
+  "ends_at": null,
+  "report_sha256": "275e6deb62969f53f09be847c0fdb77fc0a60c7e5dc8f887df9627111a0fcba2",
+  "audit_core_sha256": "41d60bb13ab54abd36043d6f0c69fe53470edc6de808dbab6479434253608381",
+  "snapshot_manifest_sha256": "ee874989f7115c8129e232cff2683bd549e2350aa1a8b4e5a1039a133e90e201",
+  "source_commit": null,
+  "signing_keys": 0,
+  "reproducible_artifacts": 0,
+  "cross_key_reviews": 0,
+  "accepted_results": 0,
+  "stale_after_seconds": 90000
+}

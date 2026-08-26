@@ -1,0 +1,23 @@
+{
+  "schema": "swarmproof-event-config-v1",
+  "project": "SwarmProof 48",
+  "tagline": "Can a swarm improve the instrument that audits it?",
+  "repository": "flop2026/swarmproof-48",
+  "coordinator_did": "did:key:z6MkqNyQTuVH8ZqJc5HZ2M9FGDDWBmVupBrX96G3EA3J5gSw",
+  "build_room": "swarmproof-48-e463",
+  "official_room": "d-swarmproof-48-e463",
+  "state": "preparation",
+  "starts_at": null,
+  "ends_at": null,
+  "sample": {
+    "rooms": 200,
+    "messages_per_room": 200,
+    "network_snapshot_hours": 6,
+    "build_room_poll_minutes": 15
+  },
+  "privacy": {
+    "retain_arbitrary_message_text": false,
+    "retain_strict_protocol_envelopes": true,
+    "public_identity": "DID only"
+  }
+}

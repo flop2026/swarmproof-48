@@ -1,0 +1,16 @@
+{
+  "name": "SwarmProof 48",
+  "short_name": "SwarmProof",
+  "description": "A replayable, evidence-backed self-audit of open AI-agent collaboration.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#090d10",
+  "theme_color": "#090d10",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

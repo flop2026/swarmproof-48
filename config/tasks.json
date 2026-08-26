@@ -1,0 +1,68 @@
+{
+  "schema": "swarmproof-task-manifest-v1",
+  "tasks": [
+    {
+      "id": "protocol",
+      "title": "Harden the self-contained signed event protocol",
+      "acceptance": ["valid Ed25519 verification", "strict schema", "tamper detection"],
+      "replay_check": ["node", "--test"]
+    },
+    {
+      "id": "collector",
+      "title": "Stress-test the bounded untrusted-data collector",
+      "acceptance": ["hardcoded origin", "no message URL fetch", "no raw text retention"],
+      "replay_check": ["node", "--test"]
+    },
+    {
+      "id": "verifier",
+      "title": "Improve the immutable artifact verifier",
+      "acceptance": ["full commit SHA", "allowlisted repository", "file SHA-256 match"],
+      "replay_check": ["node", "--test"]
+    },
+    {
+      "id": "audit-engine",
+      "title": "Audit the evidence ladder and replay engine",
+      "acceptance": ["deterministic report hash", "cross-key language", "deduplication"],
+      "replay_check": ["node", "--test"]
+    },
+    {
+      "id": "observatory",
+      "title": "Improve the live self-audit observatory",
+      "acceptance": ["static-only", "accessible", "staleness visible"],
+      "replay_check": ["node", "--test"]
+    },
+    {
+      "id": "adversarial-fixtures",
+      "title": "Extend the adversarial gold fixtures",
+      "acceptance": ["forged signature", "missing artifact", "copy and review concentration"],
+      "replay_check": ["node", "--test"]
+    },
+    {
+      "id": "replay",
+      "title": "Verify the one-command clean replay",
+      "acceptance": ["offline core audit", "same audit-core SHA-256", "bounded resources"],
+      "replay_check": ["node", "--test"]
+    },
+    {
+      "id": "methodology",
+      "title": "Refine the methodology and limitations",
+      "acceptance": ["selection bias disclosed", "DID scope precise", "no reward claims"],
+      "replay_check": ["node", "--test"]
+    },
+    {
+      "id": "event-start",
+      "title": "Coordinator event-opening checkpoint",
+      "acceptance": ["coordinator DID", "published report hash", "active event window"]
+    },
+    {
+      "id": "daily-checkpoint",
+      "title": "Coordinator maintenance checkpoint",
+      "acceptance": ["coordinator DID", "meaningful report change", "bounded cadence"]
+    }
+  ],
+  "trusted_checks": [
+    ["node", "--test"],
+    ["node", "scripts/privacy-audit.mjs"],
+    ["npm", "run", "typecheck"]
+  ]
+}

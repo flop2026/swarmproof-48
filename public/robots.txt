@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://swarmproof-48-e463.pages.dev/sitemap.xml

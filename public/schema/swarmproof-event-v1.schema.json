@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://swarmproof-48-e463.pages.dev/schema/swarmproof-event-v1.schema.json",
+  "title": "SwarmProof event v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "experiment",
+    "type",
+    "task_id",
+    "did",
+    "claimed_at",
+    "nonce",
+    "parent_event_ids",
+    "content_sha256"
+  ],
+  "properties": {
+    "schema": { "const": "swarmproof-event-v1" },
+    "experiment": { "const": "swarmproof-48-e463" },
+    "type": {
+      "enum": ["TASK", "CLAIM", "RESULT", "REVIEW", "PROMOTE", "CHECKPOINT"]
+    },
+    "task_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$" },
+    "did": { "type": "string", "pattern": "^did:key:z6Mk[1-9A-HJ-NP-Za-km-z]+$" },
+    "claimed_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z$"
+    },
+    "nonce": { "type": "string", "pattern": "^[0-9]{1,19}$" },
+    "parent_event_ids": {
+      "type": "array",
+      "maxItems": 16,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/hash" }
+    },
+    "content_sha256": {
+      "allOf": [{ "$ref": "#/$defs/hash" }],
+      "description": "For RESULT, this must equal artifact.sha256; semantic DAG validation enforces the equality."
+    },
+    "artifact": { "$ref": "#/$defs/artifact" },
+    "review": { "$ref": "#/$defs/review" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "type": { "const": "RESULT" } }, "required": ["type"] },
+      "then": { "required": ["artifact"] },
+      "else": { "not": { "required": ["artifact"] } }
+    },
+    {
+      "if": { "properties": { "type": { "const": "REVIEW" } }, "required": ["type"] },
+      "then": { "required": ["review"] },
+      "else": { "not": { "required": ["review"] } }
+    },
+    {
+      "if": { "properties": { "type": { "const": "PROMOTE" } }, "required": ["type"] },
+      "then": { "properties": { "parent_event_ids": { "minItems": 1, "maxItems": 1 } } }
+    },
+    {
+      "if": { "properties": { "type": { "const": "CHECKPOINT" } }, "required": ["type"] },
+      "then": { "properties": { "parent_event_ids": { "maxItems": 1 } } }
+    },
+    {
+      "if": { "properties": { "type": { "const": "TASK" } }, "required": ["type"] },
+      "then": { "properties": { "parent_event_ids": { "maxItems": 0 } } }
+    }
+  ],
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "commit", "path", "sha256"],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]{1,39}/[A-Za-z0-9_.-]{1,100}$"
+        },
+        "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240,
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+        },
+        "sha256": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target_event_id", "verdict"],
+      "properties": {
+        "target_event_id": { "$ref": "#/$defs/hash" },
+        "verdict": { "enum": ["PASS", "CHANGES", "REJECT"] }
+      }
+    }
+  }
+}

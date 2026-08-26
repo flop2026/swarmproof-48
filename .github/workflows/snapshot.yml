@@ -1,0 +1,88 @@
+name: Daily evidence snapshot
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+    - cron: "7 */6 * * *"
+    - cron: "17 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: swarmproof-snapshot
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    if: github.repository_owner == 'flop2026'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TZ: UTC
+      SWARMPROOF_RETAIN_SKETCHES: "0"
+      SWARMPROOF_EVENT_NAME: ${{ github.event_name }}
+      SWARMPROOF_SCHEDULE: ${{ github.event.schedule }}
+    steps:
+      - name: Check out trusted branch
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Select bounded cadence
+        id: cadence
+        shell: bash
+        run: |
+          state=$(node -p "JSON.parse(require('fs').readFileSync('config/event.json','utf8')).state")
+          run_snapshot=0
+          network=0
+          if [ "$SWARMPROOF_EVENT_NAME" = "workflow_dispatch" ]; then
+            run_snapshot=1
+            network=1
+          elif [ "$SWARMPROOF_SCHEDULE" = "*/15 * * * *" ] && [ "$state" = "active" ]; then
+            run_snapshot=1
+          elif [ "$SWARMPROOF_SCHEDULE" = "7 */6 * * *" ] && [ "$state" = "active" ]; then
+            run_snapshot=1
+            network=1
+          elif [ "$SWARMPROOF_SCHEDULE" = "17 0 * * *" ] && [ "$state" != "active" ]; then
+            run_snapshot=1
+            network=1
+          fi
+          echo "run_snapshot=$run_snapshot" >> "$GITHUB_OUTPUT"
+          echo "network=$network" >> "$GITHUB_OUTPUT"
+      - name: Use pinned Node.js
+        if: steps.cadence.outputs.run_snapshot == '1'
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Install locked dependencies
+        if: steps.cadence.outputs.run_snapshot == '1'
+        run: npm ci --ignore-scripts
+      - name: Generate bounded snapshot
+        if: steps.cadence.outputs.run_snapshot == '1'
+        env:
+          SWARMPROOF_NETWORK: ${{ steps.cadence.outputs.network }}
+        run: npm run snapshot
+      - name: Validate generated output
+        if: steps.cadence.outputs.run_snapshot == '1'
+        run: npm run validate
+      - name: Commit data-only update
+        if: steps.cadence.outputs.run_snapshot == '1'
+        shell: bash
+        run: |
+          changed=$(git status --porcelain -- public/data)
+          if [ -z "$changed" ]; then
+            exit 0
+          fi
+          unexpected=$(git status --porcelain | awk '$2 !~ /^public\/data\// { print $2 }')
+          if [ -n "$unexpected" ]; then
+            exit 1
+          fi
+          git config user.name "SwarmProof Coordinator"
+          git config user.email "${{ github.repository_owner_id }}+${{ github.repository_owner }}@users.noreply.github.com"
+          git config user.useConfigOnly true
+          git add public/data
+          git commit -m "data: daily evidence snapshot"
+          git push origin HEAD:main
