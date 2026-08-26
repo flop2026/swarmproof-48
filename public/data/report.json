@@ -282,12 +282,12 @@
     "Fixed replay checks run from an exact trusted-main archive in a secretless bounded process; operating-system network isolation is not asserted."
   ],
   "audit_core_sha256": "4301a2ca67751c319d206a16d1e863c27d6b5f2181627ddfd37be96c9cf858f5",
-  "generated_at": "2026-08-26T08:08:59.205Z",
+  "generated_at": "2026-08-26T08:22:44.506Z",
   "event_state": "active",
   "unsigned_proposals_observed": 0,
   "build_room": {
     "room": "swarmproof-48-e463",
-    "messages_observed_in_tail": 12,
+    "messages_observed_in_tail": 13,
     "collection_error": null
   },
   "artifact_verification": {
@@ -314,14 +314,14 @@
   },
   "snapshot_manifest": {
     "schema": "swarmproof-snapshot-manifest-v1",
-    "generated_at": "2026-08-26T08:08:59.205Z",
-    "source_commit": "d1c2a581dcc25c2139b80478a2ca283e1d1d928e",
+    "generated_at": "2026-08-26T08:22:44.506Z",
+    "source_commit": "8f8195a8c5f9f7f18ba2f5aead9eb6e6f531f7a4",
     "audit_core_sha256": "4301a2ca67751c319d206a16d1e863c27d6b5f2181627ddfd37be96c9cf858f5",
     "network_sample_sha256": "46c7ddcf8b87f44c6d8b6cf5a17d02228596275c761760acb94237159eb52f4f",
     "events_archive_sha256": "68fc0d0385e4382be1c68e04d88e116e9a9fbe4bc60e74f0c944d60dcbe8e56a",
     "proposals_archive_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   },
-  "snapshot_manifest_sha256": "41e652689ac1a0459eba6032da06478c8c1cf3a36be1ca1fd4f01228ca059f9f",
+  "snapshot_manifest_sha256": "8b3d929587a1964ce66cb4b0a88ff962ba19f423cffe30bf3ddae6b96d9b7cac",
   "network_sample": {
     "schema": "swarmproof-network-sample-v2",
     "generated_at": "2026-08-26T07:58:41.571Z",
